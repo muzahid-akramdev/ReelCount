@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muzahid-akramdev/ReelCount/docs/rules.schema.json",
+  "title": "ReelCount rules.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "global", "apps"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["debounceMs", "countOnViewerEnter", "countBackwardSwipes"],
+      "properties": {
+        "debounceMs": { "type": "integer", "minimum": 200, "maximum": 3000 },
+        "countOnViewerEnter": { "type": "boolean" },
+        "countBackwardSwipes": { "type": "boolean" },
+        "backwardHeuristicWindowMs": { "type": "integer", "minimum": 300, "maximum": 5000, "default": 2000 },
+        "maxGapSeconds": { "type": "integer", "minimum": 5, "maximum": 600, "default": 180 },
+        "maxTreeDepth": { "type": "integer", "minimum": 4, "maximum": 32, "default": 18 }
+      }
+    },
+    "apps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/appRule" }
+    }
+  },
+  "$defs": {
+    "matcher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "op", "value"],
+      "properties": {
+        "source": { "enum": ["viewId", "className", "contentDescription"] },
+        "op": { "enum": ["equals", "contains", "regex"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 300 }
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "op", "value", "score"],
+      "properties": {
+        "source": { "enum": ["viewId", "className", "contentDescription"] },
+        "op": { "enum": ["equals", "contains", "regex"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "score": { "type": "integer", "minimum": 1, "maximum": 10 }
+      }
+    },
+    "extractor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["pagerIndex", "structuralHash"] },
+        "source": { "enum": ["viewId", "className"] },
+        "op": { "enum": ["equals", "contains", "regex"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "include": {
+          "type": "array",
+          "items": { "enum": ["viewId", "className", "boundsBucket"] },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "pagerIndex" } } },
+          "then": { "required": ["source", "op", "value"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "structuralHash" } } },
+          "then": { "required": ["include"] }
+        }
+      ]
+    },
+    "appRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "packageName", "enabled", "viewer", "identity"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 40, "pattern": "^[a-z0-9_]+$" },
+        "packageName": { "type": "string", "minLength": 3, "maxLength": 120, "pattern": "^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$" },
+        "enabled": { "type": "boolean" },
+        "viewer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minScore", "signals"],
+          "properties": {
+            "minScore": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "signals": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/signal" } },
+            "blockers": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/matcher" } }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["extractors"],
+          "properties": {
+            "extractors": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4,
+              "items": { "$ref": "#/$defs/extractor" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
