@@ -247,8 +247,7 @@ class Phase1LogicTest {
         return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(tab))
     }
 
-    private fun liteReels(): NodeSnapshot =
-        node(null, "android.view.View", "রিল", 0, 0, 1080, 1920, null)
+    private fun liteReels(): NodeSnapshot = node(null, "android.view.View", "রিল", 0, 0, 1080, 1920, null)
 
     private fun reelTree(inbox: Boolean): NodeSnapshot {
         val inboxNode =
