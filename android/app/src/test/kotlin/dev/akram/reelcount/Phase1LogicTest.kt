@@ -1,0 +1,261 @@
+package dev.akram.reelcount
+
+import dev.akram.reelcount.data.ReelRepository
+import dev.akram.reelcount.data.db.DailyStatEntity
+import dev.akram.reelcount.data.db.EventStamp
+import dev.akram.reelcount.domain.Bounds
+import dev.akram.reelcount.domain.CountPolicy
+import dev.akram.reelcount.domain.DayBoundary
+import dev.akram.reelcount.domain.NodeSnapshot
+import dev.akram.reelcount.domain.PolicyConfig
+import dev.akram.reelcount.domain.RuleEngine
+import dev.akram.reelcount.domain.RulesParser
+import dev.akram.reelcount.domain.SwipeDirection
+import dev.akram.reelcount.domain.WatchSample
+import dev.akram.reelcount.domain.crossedMilestone
+import dev.akram.reelcount.domain.underLimitStreak
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+
+class Phase1LogicTest {
+    private fun policy(backward: Boolean = false): CountPolicy =
+        CountPolicy {
+            PolicyConfig(
+                debounceMs = 600,
+                countBackward = backward,
+                backwardWindowMs = 2_000,
+                maxGapSeconds = 180,
+            )
+        }
+
+    @Test
+    fun enterCountsOnceAfterDebounce() {
+        val counter = policy()
+        val pending = counter.onSample(WatchSample(0, true, "a", 0))
+        assertFalse(pending.counted)
+        assertTrue(pending.needsConfirm)
+        assertFalse(counter.confirm(599).counted)
+        val counted = counter.confirm(600)
+        assertTrue(counted.counted)
+        assertEquals(0L, counted.estSeconds)
+        assertFalse(counter.onSample(WatchSample(900, true, "a", 0)).counted)
+    }
+
+    @Test
+    fun forwardAdvanceCountsTheGap() {
+        val counter = policy()
+        counter.onSample(WatchSample(0, true, "a", 1))
+        counter.confirm(600)
+        assertTrue(counter.onSample(WatchSample(2_000, true, "b", 2)).needsConfirm)
+        val counted = counter.confirm(2_600)
+        assertTrue(counted.counted)
+        assertEquals(SwipeDirection.FORWARD, counted.direction)
+        assertEquals(2L, counted.estSeconds)
+    }
+
+    @Test
+    fun backwardSwipeIsIgnoredUnlessEnabled() {
+        val ignored = policy()
+        ignored.onSample(WatchSample(0, true, "a", 3))
+        ignored.confirm(600)
+        ignored.onSample(WatchSample(2_000, true, "b", 2))
+        val skipped = ignored.confirm(2_600)
+        assertFalse(skipped.counted)
+        assertEquals(SwipeDirection.BACKWARD, skipped.direction)
+
+        val counted = policy(backward = true)
+        counted.onSample(WatchSample(0, true, "a", 3))
+        counted.confirm(600)
+        counted.onSample(WatchSample(2_000, true, "b", 2))
+        val decision = counted.confirm(2_600)
+        assertTrue(decision.counted)
+        assertEquals(SwipeDirection.BACKWARD, decision.direction)
+    }
+
+    @Test
+    fun leavingAndReenteringCountsAgain() {
+        val counter = policy()
+        counter.onSample(WatchSample(0, true, "a", 0))
+        counter.confirm(600)
+        counter.onSample(WatchSample(1_000, false, null, null))
+        counter.onSample(WatchSample(1_500, true, "c", 0))
+        assertTrue(counter.confirm(2_100).counted)
+    }
+
+    @Test
+    fun watchGapIsCapped() {
+        val counter = policy()
+        counter.onSample(WatchSample(0, true, "a", 0))
+        counter.confirm(600)
+        counter.onSample(WatchSample(500_600, true, "b", 1))
+        val counted = counter.confirm(501_200)
+        assertTrue(counted.counted)
+        assertEquals(180L, counted.estSeconds)
+    }
+
+    @Test
+    fun returningHashWithinTheWindowIsBackward() {
+        val counter = policy()
+        counter.onSample(WatchSample(0, true, "h1", null))
+        counter.confirm(600)
+        counter.onSample(WatchSample(2_000, true, "h2", null))
+        counter.confirm(2_600)
+        counter.onSample(WatchSample(3_000, true, "h1", null))
+        val decision = counter.confirm(3_600)
+        assertEquals(SwipeDirection.BACKWARD, decision.direction)
+        assertFalse(decision.counted)
+    }
+
+    @Test
+    fun viewerNeedsTheScoreAndABlockerWins() {
+        val rules = RulesParser.parse(SAMPLE).getOrThrow()
+        val engine = RuleEngine()
+        val instagram = rules.apps.first { it.packageName == "com.instagram.android" }
+        val active = engine.evaluate(instagram, reelTree(inbox = false))
+        assertTrue(active.viewerActive)
+        assertEquals(4, active.index)
+        val blocked = engine.evaluate(instagram, reelTree(inbox = true))
+        assertFalse(blocked.viewerActive)
+    }
+
+    @Test
+    fun bundledRulesParse() {
+        val file = File("src/main/assets/rules.json")
+        val parsed = RulesParser.parse(file.readText())
+        assertTrue(parsed.isSuccess)
+        assertEquals(4, parsed.getOrThrow().apps.size)
+    }
+
+    @Test
+    fun badSchemaIsRejected() {
+        val broken = SAMPLE.replace("\"schemaVersion\": 1", "\"schemaVersion\": 9")
+        assertTrue(RulesParser.parse(broken).isFailure)
+    }
+
+    @Test
+    fun dayBoundaryUsesTheDeviceZone() {
+        val zone = ZoneId.of("Asia/Dhaka")
+        val epoch = Instant.parse("2026-10-14T18:00:00Z").toEpochMilli()
+        assertEquals("2026-10-15", DayBoundary.dayOf(epoch, zone))
+        assertEquals(0, DayBoundary.hourOf(epoch, zone))
+    }
+
+    @Test
+    fun milestonesAndStreak() {
+        assertEquals(25, crossedMilestone(0, 25, 50))
+        assertEquals(50, crossedMilestone(25, 50, 50))
+        assertEquals(75, crossedMilestone(50, 75, 50))
+        assertNull(crossedMilestone(10, 20, 50))
+        val today = LocalDate.parse("2026-10-15")
+        val counts = mapOf("2026-10-15" to 10, "2026-10-14" to 10, "2026-10-13" to 80)
+        assertEquals(2, underLimitStreak(counts, today, 50))
+        assertEquals(0, underLimitStreak(mapOf("2026-10-15" to 50), today, 50))
+    }
+
+    @Test
+    fun csvHasStatsAndEvents() {
+        val zone = ZoneId.of("UTC")
+        val csv =
+            ReelRepository.buildCsv(
+                listOf(DailyStatEntity("2026-10-15", "com.instagram.android", 3, 40)),
+                listOf(EventStamp(0L, "com.instagram.android")),
+                zone,
+            )
+        assertTrue(csv.startsWith("type,day_or_time,app,count,est_seconds"))
+        assertTrue(csv.contains("stat,2026-10-15,com.instagram.android,3,40"))
+        assertTrue(csv.contains("event,1970-01-01T00:00"))
+        assertTrue(csv.contains(",com.instagram.android,,"))
+    }
+
+    private fun reelTree(inbox: Boolean): NodeSnapshot {
+        val inboxNode =
+            if (inbox) {
+                listOf(node("com.instagram.android:id/direct_inbox", "android.view.View", null, 0, 0, 10, 10, null))
+            } else {
+                emptyList()
+            }
+        val page = node(null, "android.view.View", null, 0, 0, 1080, 1920, 4)
+        val pager =
+            node(
+                "com.instagram.android:id/clips_viewer_view_pager",
+                "androidx.viewpager.widget.ViewPager",
+                null,
+                0,
+                0,
+                1080,
+                1920,
+                null,
+                listOf(page),
+            )
+        return node(
+            "com.instagram.android:id/clips_viewer_container",
+            "android.widget.FrameLayout",
+            "Reels",
+            0,
+            0,
+            1080,
+            1920,
+            null,
+            listOf(pager) + inboxNode,
+        )
+    }
+
+    private fun node(
+        viewId: String?,
+        className: String,
+        description: String?,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+        index: Int?,
+        children: List<NodeSnapshot> = emptyList(),
+    ): NodeSnapshot = NodeSnapshot(viewId, className, description, Bounds(left, top, right, bottom), index, children)
+
+    private companion object {
+        val SAMPLE =
+            """
+            {
+              "schemaVersion": 1,
+              "global": {
+                "debounceMs": 600,
+                "countOnViewerEnter": true,
+                "countBackwardSwipes": false
+              },
+              "apps": [
+                {
+                  "id": "instagram",
+                  "packageName": "com.instagram.android",
+                  "enabled": true,
+                  "viewer": {
+                    "minScore": 3,
+                    "signals": [
+                      {"source": "viewId", "op": "regex", "value": "(?i)clips_viewer", "score": 3}
+                    ],
+                    "blockers": [
+                      {"source": "viewId", "op": "contains", "value": "direct_inbox"}
+                    ]
+                  },
+                  "identity": {
+                    "extractors": [
+                      {
+                        "kind": "pagerIndex",
+                        "source": "viewId",
+                        "op": "regex",
+                        "value": "(?i)view_pager"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+            """.trimIndent()
+    }
+}

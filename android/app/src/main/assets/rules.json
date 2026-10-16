@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "global": {
+    "debounceMs": 600,
+    "countOnViewerEnter": true,
+    "countBackwardSwipes": false,
+    "backwardHeuristicWindowMs": 2000,
+    "maxGapSeconds": 180,
+    "maxTreeDepth": 18
+  },
+  "apps": [
+    {
+      "id": "instagram",
+      "packageName": "com.instagram.android",
+      "enabled": true,
+      "viewer": {
+        "minScore": 3,
+        "signals": [
+          {
+            "source": "viewId",
+            "op": "regex",
+            "value": "(?i)clips_viewer|reel_viewer",
+            "score": 3
+          },
+          {
+            "source": "className",
+            "op": "contains",
+            "value": "ViewPager",
+            "score": 2
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)\\breels?\\b",
+            "score": 2
+          }
+        ],
+        "blockers": [
+          {
+            "source": "viewId",
+            "op": "contains",
+            "value": "direct_inbox"
+          }
+        ]
+      },
+      "identity": {
+        "extractors": [
+          {
+            "kind": "pagerIndex",
+            "source": "viewId",
+            "op": "regex",
+            "value": "(?i)view_pager|clips_viewer"
+          },
+          {
+            "kind": "structuralHash",
+            "include": ["viewId", "className", "boundsBucket"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "youtube",
+      "packageName": "com.google.android.youtube",
+      "enabled": true,
+      "viewer": {
+        "minScore": 3,
+        "signals": [
+          {
+            "source": "viewId",
+            "op": "regex",
+            "value": "(?i)reel_|shorts_",
+            "score": 3
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)\\bshorts?\\b",
+            "score": 2
+          },
+          {
+            "source": "className",
+            "op": "contains",
+            "value": "ViewPager",
+            "score": 1
+          }
+        ],
+        "blockers": [
+          {
+            "source": "viewId",
+            "op": "contains",
+            "value": "watch_player"
+          }
+        ]
+      },
+      "identity": {
+        "extractors": [
+          {
+            "kind": "pagerIndex",
+            "source": "viewId",
+            "op": "regex",
+            "value": "(?i)reel_|shorts_"
+          },
+          {
+            "kind": "structuralHash",
+            "include": ["viewId", "className", "boundsBucket"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "facebook",
+      "packageName": "com.facebook.katana",
+      "enabled": true,
+      "viewer": {
+        "minScore": 3,
+        "signals": [
+          {
+            "source": "viewId",
+            "op": "regex",
+            "value": "(?i)reel|fb_shorts",
+            "score": 3
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)\\breels?\\b",
+            "score": 2
+          },
+          {
+            "source": "className",
+            "op": "contains",
+            "value": "ViewPager",
+            "score": 2
+          }
+        ],
+        "blockers": [
+          {
+            "source": "viewId",
+            "op": "contains",
+            "value": "stories_tray"
+          }
+        ]
+      },
+      "identity": {
+        "extractors": [
+          {
+            "kind": "pagerIndex",
+            "source": "className",
+            "op": "contains",
+            "value": "ViewPager"
+          },
+          {
+            "kind": "structuralHash",
+            "include": ["viewId", "className", "boundsBucket"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "facebook_lite",
+      "packageName": "com.facebook.lite",
+      "enabled": true,
+      "viewer": {
+        "minScore": 3,
+        "signals": [
+          {
+            "source": "viewId",
+            "op": "regex",
+            "value": "(?i)reel|shorts",
+            "score": 3
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)\\breels?\\b",
+            "score": 2
+          }
+        ],
+        "blockers": []
+      },
+      "identity": {
+        "extractors": [
+          {
+            "kind": "structuralHash",
+            "include": ["viewId", "className", "boundsBucket"]
+          }
+        ]
+      }
+    }
+  ]
+}
