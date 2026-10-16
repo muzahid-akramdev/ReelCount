@@ -14,32 +14,34 @@
       "packageName": "com.instagram.android",
       "enabled": true,
       "viewer": {
-        "minScore": 3,
+        "minScore": 4,
         "signals": [
           {
             "source": "viewId",
             "op": "regex",
-            "value": "(?i)clips_viewer|reel_viewer",
-            "score": 3
-          },
-          {
-            "source": "className",
-            "op": "contains",
-            "value": "ViewPager",
-            "score": 2
+            "value": "(?i)clips_viewer|clips_media_component|clips_video",
+            "score": 4,
+            "minHeightRatio": 0.55
           },
           {
             "source": "contentDescription",
             "op": "regex",
-            "value": "(?i)\\breels?\\b",
-            "score": 2
+            "value": "(?i)(\\breels?\\b|রিলস?)",
+            "score": 4,
+            "minHeightRatio": 0.75
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)(Reel|Clips)[A-Za-z0-9_.]*Activity",
+            "score": 4
           }
         ],
         "blockers": [
           {
             "source": "viewId",
-            "op": "contains",
-            "value": "direct_inbox"
+            "op": "regex",
+            "value": "(?i)direct_inbox|reel_viewer_root|reel_viewer_media|stories_tray|story_viewer"
           }
         ]
       },
@@ -49,11 +51,11 @@
             "kind": "pagerIndex",
             "source": "viewId",
             "op": "regex",
-            "value": "(?i)view_pager|clips_viewer"
+            "value": "(?i)clips_viewer|view_pager"
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId", "className", "boundsBucket"]
+            "include": ["viewId"]
           }
         ]
       }
@@ -69,19 +71,21 @@
             "source": "viewId",
             "op": "regex",
             "value": "(?i)reel_|shorts_",
-            "score": 3
+            "score": 3,
+            "minHeightRatio": 0.7
           },
           {
             "source": "contentDescription",
             "op": "regex",
-            "value": "(?i)\\bshorts?\\b",
-            "score": 2
+            "value": "(?i)(\\bshorts?\\b|শর্টস)",
+            "score": 3,
+            "minHeightRatio": 0.75
           },
           {
             "source": "className",
-            "op": "contains",
-            "value": "ViewPager",
-            "score": 1
+            "op": "regex",
+            "value": "(?i)Shorts[A-Za-z0-9_.]*Activity",
+            "score": 4
           }
         ],
         "blockers": [
@@ -102,7 +106,7 @@
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId", "className", "boundsBucket"]
+            "include": ["viewId"]
           }
         ]
       }
@@ -117,27 +121,29 @@
           {
             "source": "viewId",
             "op": "regex",
-            "value": "(?i)reel|fb_shorts",
-            "score": 3
+            "value": "(?i)reel|fb_shorts|shorts_viewer",
+            "score": 3,
+            "minHeightRatio": 0.72
           },
           {
             "source": "contentDescription",
             "op": "regex",
-            "value": "(?i)\\breels?\\b",
-            "score": 2
+            "value": "(?i)(\\breels?\\b|রিলস?)",
+            "score": 3,
+            "minHeightRatio": 0.75
           },
           {
             "source": "className",
-            "op": "contains",
-            "value": "ViewPager",
-            "score": 2
+            "op": "regex",
+            "value": "(?i)(Reel|Clips|Shorts)[A-Za-z0-9_.]*Activity",
+            "score": 4
           }
         ],
         "blockers": [
           {
             "source": "viewId",
-            "op": "contains",
-            "value": "stories_tray"
+            "op": "regex",
+            "value": "(?i)stories_tray|story_viewer"
           }
         ]
       },
@@ -146,12 +152,12 @@
           {
             "kind": "pagerIndex",
             "source": "className",
-            "op": "contains",
-            "value": "ViewPager"
+            "op": "regex",
+            "value": "(?i)ViewPager|RecyclerView"
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId", "className", "boundsBucket"]
+            "include": ["viewId"]
           }
         ]
       }
@@ -166,14 +172,22 @@
           {
             "source": "viewId",
             "op": "regex",
-            "value": "(?i)reel|shorts",
-            "score": 3
+            "value": "(?i)reel|shorts|clips|video_fullscreen|fullscreen_video",
+            "score": 3,
+            "minHeightRatio": 0.6
           },
           {
             "source": "contentDescription",
             "op": "regex",
-            "value": "(?i)\\breels?\\b",
-            "score": 2
+            "value": "(?i)(\\breels?\\b|\\bshorts?\\b|রিলস?|শর্টস)",
+            "score": 3,
+            "minHeightRatio": 0.6
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)(Reel|Clips|Shorts|Watch)[A-Za-z0-9_.]*Activity",
+            "score": 4
           }
         ],
         "blockers": []
@@ -181,8 +195,14 @@
       "identity": {
         "extractors": [
           {
+            "kind": "pagerIndex",
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)ViewPager|RecyclerView"
+          },
+          {
             "kind": "structuralHash",
-            "include": ["viewId", "className", "boundsBucket"]
+            "include": ["viewId", "className"]
           }
         ]
       }

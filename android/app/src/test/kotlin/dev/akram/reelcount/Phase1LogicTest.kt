@@ -105,12 +105,39 @@ class Phase1LogicTest {
         val counter = policy()
         counter.onSample(WatchSample(0, true, "h1", null))
         counter.confirm(600)
-        counter.onSample(WatchSample(2_000, true, "h2", null))
+        counter.onSample(WatchSample(2_000, true, "h2", null, scrolled = true))
         counter.confirm(2_600)
-        counter.onSample(WatchSample(3_000, true, "h1", null))
+        counter.onSample(WatchSample(3_000, true, "h1", null, scrolled = true))
         val decision = counter.confirm(3_600)
         assertEquals(SwipeDirection.BACKWARD, decision.direction)
         assertFalse(decision.counted)
+    }
+
+    @Test
+    fun hashChangeWithoutAScrollDoesNotCount() {
+        val counter = policy()
+        counter.onSample(WatchSample(0, true, "h1", null))
+        assertTrue(counter.confirm(600).counted)
+        val tapped = counter.onSample(WatchSample(2_000, true, "h2", null))
+        assertFalse(tapped.needsConfirm)
+        assertFalse(tapped.counted)
+        assertFalse(counter.confirm(4_000).counted)
+    }
+
+    @Test
+    fun bundledRulesIgnoreTheFeedAndAcceptAFullscreenViewer() {
+        val rules = RulesParser.parse(File("src/main/assets/rules.json").readText()).getOrThrow()
+        val engine = RuleEngine()
+        val instagram = rules.apps.first { it.packageName == "com.instagram.android" }
+        val facebook = rules.apps.first { it.packageName == "com.facebook.katana" }
+        val lite = rules.apps.first { it.packageName == "com.facebook.lite" }
+
+        assertFalse(engine.evaluate(instagram, instagramFeed()).viewerActive)
+        assertTrue(engine.evaluate(instagram, instagramReels()).viewerActive)
+        assertFalse(engine.evaluate(facebook, facebookCard()).viewerActive)
+        assertTrue(engine.evaluate(facebook, facebookReels()).viewerActive)
+        assertFalse(engine.evaluate(lite, liteTab()).viewerActive)
+        assertTrue(engine.evaluate(lite, liteReels()).viewerActive)
     }
 
     @Test
@@ -173,6 +200,55 @@ class Phase1LogicTest {
         assertTrue(csv.contains("event,1970-01-01T00:00"))
         assertTrue(csv.contains(",com.instagram.android,,"))
     }
+
+    private fun instagramFeed(): NodeSnapshot {
+        val tab = node(null, "android.widget.ImageView", "Reels", 800, 1800, 1000, 1920, null)
+        val pager =
+            node(
+                "com.instagram.android:id/view_pager",
+                "androidx.viewpager.widget.ViewPager",
+                null,
+                0,
+                0,
+                1080,
+                1700,
+                0,
+            )
+        return node("com.instagram.android:id/tab_bar", "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager, tab))
+    }
+
+    private fun instagramReels(): NodeSnapshot {
+        val page = node(null, "android.view.View", null, 0, 0, 1080, 1920, 2)
+        val pager =
+            node(
+                "com.instagram.android:id/clips_viewer_view_pager",
+                "androidx.viewpager.widget.ViewPager",
+                null,
+                0,
+                0,
+                1080,
+                1920,
+                null,
+                listOf(page),
+            )
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager))
+    }
+
+    private fun facebookCard(): NodeSnapshot {
+        val card = node("com.facebook.katana:id/fb_reel_card", "android.widget.FrameLayout", "Reels", 0, 500, 1080, 1200, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(card))
+    }
+
+    private fun facebookReels(): NodeSnapshot =
+        node("com.facebook.katana:id/reels_viewer", "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null)
+
+    private fun liteTab(): NodeSnapshot {
+        val tab = node(null, "android.view.View", "রিল", 0, 1800, 220, 1920, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(tab))
+    }
+
+    private fun liteReels(): NodeSnapshot =
+        node(null, "android.view.View", "রিল", 0, 0, 1080, 1920, null)
 
     private fun reelTree(inbox: Boolean): NodeSnapshot {
         val inboxNode =

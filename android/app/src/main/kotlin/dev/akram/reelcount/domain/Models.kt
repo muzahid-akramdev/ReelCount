@@ -48,6 +48,7 @@ data class Signal(
     val op: MatchOp,
     val value: String,
     val score: Int,
+    val minHeightRatio: Double = 0.0,
 )
 
 enum class ExtractorKind { PAGER_INDEX, STRUCTURAL_HASH }

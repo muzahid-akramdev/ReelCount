@@ -2,6 +2,7 @@ package dev.akram.reelcount.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -11,6 +12,7 @@ import dev.akram.reelcount.data.settings.UserSettings
 import dev.akram.reelcount.domain.AppRule
 import dev.akram.reelcount.domain.CountDecision
 import dev.akram.reelcount.domain.CountPolicy
+import dev.akram.reelcount.domain.NodeSnapshot
 import dev.akram.reelcount.domain.PolicyConfig
 import dev.akram.reelcount.domain.RuleEngine
 import dev.akram.reelcount.domain.RuleSet
@@ -98,7 +100,16 @@ class ReelCounterService : AccessibilityService() {
         try {
             if (root.packageName?.toString() != pkg) return
             val snap = NodeSnapshots.capture(root, rules.global.maxTreeDepth) ?: return
-            val eval = engine.evaluate(rule, snap)
+            val windowClass = event.className?.toString()
+            val tree = withWindowClass(snap, type, windowClass)
+            val eval = engine.evaluate(rule, tree)
+            val scroll = scrollAdvance(event, snap.bounds.height)
+            var identity = eval.identity
+            var index = eval.index
+            if (eval.viewerActive && index == null && scroll.page != null) {
+                identity = "s${scroll.page}"
+                index = scroll.page
+            }
             if (now - lastInspect > 400) {
                 lastInspect = now
                 InspectorBus.add(
@@ -107,8 +118,8 @@ class ReelCounterService : AccessibilityService() {
                         packageName = pkg,
                         eventType = eventTypeName(type),
                         viewerActive = eval.viewerActive,
-                        identity = eval.identity,
-                        lines = NodeSnapshots.flatten(snap),
+                        identity = identity,
+                        lines = NodeSnapshots.flatten(tree),
                     ),
                 )
             }
@@ -117,8 +128,9 @@ class ReelCounterService : AccessibilityService() {
                     WatchSample(
                         elapsedMs = now,
                         viewerActive = eval.viewerActive,
-                        identity = eval.identity,
-                        index = eval.index,
+                        identity = identity,
+                        index = index,
+                        scrolled = scroll.large,
                     ),
                 )
             handle(pkg, decision, eval.viewerActive)
@@ -266,6 +278,51 @@ class ReelCounterService : AccessibilityService() {
             maxGapSeconds = rules.global.maxGapSeconds,
         )
 
+    private fun withWindowClass(
+        snap: NodeSnapshot,
+        type: Int,
+        className: String?,
+    ): NodeSnapshot {
+        if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || className == null) return snap
+        if (!WINDOW_CLASS.containsMatchIn(className)) return snap
+        val marker =
+            NodeSnapshot(
+                viewId = null,
+                className = className,
+                contentDescription = null,
+                bounds = snap.bounds,
+                collectionIndex = null,
+                children = emptyList(),
+            )
+        return snap.copy(children = snap.children + marker)
+    }
+
+    private fun scrollAdvance(
+        event: AccessibilityEvent,
+        rootHeight: Int,
+    ): ScrollAdvance {
+        if (event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED || rootHeight <= 0) {
+            return ScrollAdvance(large = false, page = null)
+        }
+        val source = event.source ?: return ScrollAdvance(large = false, page = null)
+        try {
+            val rect = Rect()
+            source.getBoundsInScreen(rect)
+            if (rect.height() < rootHeight * 0.55) return ScrollAdvance(large = false, page = null)
+            val horizontalOnly = event.scrollY == 0 && event.scrollX != 0 && event.toIndex < 0
+            if (horizontalOnly) return ScrollAdvance(large = false, page = null)
+            val page =
+                when {
+                    event.itemCount > 1 && event.toIndex >= 0 -> event.toIndex
+                    event.scrollY >= rootHeight -> event.scrollY / rootHeight
+                    else -> null
+                }
+            return ScrollAdvance(large = true, page = page)
+        } finally {
+            source.recycle()
+        }
+    }
+
     private fun eventTypeName(type: Int): String =
         when (type) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> "WINDOW_STATE"
@@ -274,3 +331,10 @@ class ReelCounterService : AccessibilityService() {
             else -> type.toString()
         }
 }
+
+private data class ScrollAdvance(
+    val large: Boolean,
+    val page: Int?,
+)
+
+private val WINDOW_CLASS = Regex("(?i)(Reel|Clips|Shorts)")

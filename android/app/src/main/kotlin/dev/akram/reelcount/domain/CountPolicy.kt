@@ -15,6 +15,7 @@ data class WatchSample(
     val viewerActive: Boolean,
     val identity: String?,
     val index: Int?,
+    val scrolled: Boolean = false,
 )
 
 data class CountDecision(
@@ -63,6 +64,11 @@ class CountPolicy(
             pendingIdentity = null
             return CountDecision()
         }
+        // A structural hash flaps when a button is tapped or a frame animates.
+        // Those are not a new reel. A real advance has a pager index, or it arrived with a scroll.
+        if (sample.index == null && !sample.scrolled) {
+            return CountDecision()
+        }
         if (sample.identity != pendingIdentity) {
             pendingIdentity = sample.identity
             pendingIndex = sample.index
@@ -105,7 +111,8 @@ class CountPolicy(
     }
 
     private fun trackFirst(sample: WatchSample): CountDecision {
-        if (sample.identity != null && sample.identity != pendingIdentity) {
+        val indexedChange = sample.index != null && sample.identity != null && sample.identity != pendingIdentity
+        if (indexedChange) {
             pendingIdentity = sample.identity
             pendingIndex = sample.index
             pendingSince = sample.elapsedMs

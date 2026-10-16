@@ -14,7 +14,7 @@ class RuleEngine {
         val used = HashSet<Signal>()
         walk(root) { node ->
             for (signal in rule.viewer.signals) {
-                if (signal !in used && matches(signal, node)) {
+                if (signal !in used && signalHits(signal, node, root)) {
                     used.add(signal)
                     score += signal.score
                 }
@@ -38,7 +38,7 @@ class RuleEngine {
         walk(root) { node ->
             var nodeScore = 0
             for (signal in rule.viewer.signals) {
-                if (matches(signal, node)) nodeScore += signal.score
+                if (signalHits(signal, node, root)) nodeScore += signal.score
             }
             val area = node.bounds.width * node.bounds.height
             if (nodeScore > 0 && (nodeScore > bestScore || (nodeScore == bestScore && area > bestArea))) {
@@ -58,7 +58,7 @@ class RuleEngine {
         for (extractor in identity.extractors) {
             when (extractor.kind) {
                 ExtractorKind.PAGER_INDEX -> {
-                    val index = pagerIndex(extractor, focus) ?: pagerIndex(extractor, root)
+                    val index = pagerIndex(extractor, focus, root) ?: pagerIndex(extractor, root, root)
                     if (index != null) return "i$index" to index
                 }
                 ExtractorKind.STRUCTURAL_HASH -> {
@@ -70,18 +70,36 @@ class RuleEngine {
         return null to null
     }
 
+    private fun signalHits(
+        signal: Signal,
+        node: NodeSnapshot,
+        root: NodeSnapshot,
+    ): Boolean {
+        if (!matches(signal, node)) return false
+        if (signal.minHeightRatio <= 0.0) return true
+        val rootHeight = root.bounds.height
+        val rootWidth = root.bounds.width
+        if (rootHeight <= 0 || rootWidth <= 0) return false
+        val tallEnough = node.bounds.height >= rootHeight * signal.minHeightRatio
+        val wideEnough = node.bounds.width >= rootWidth * (signal.minHeightRatio * 0.85).coerceAtMost(0.95)
+        return tallEnough && wideEnough
+    }
+
     private fun pagerIndex(
         extractor: Extractor,
+        scope: NodeSnapshot,
         root: NodeSnapshot,
     ): Int? {
         val source = extractor.source ?: return null
         val op = extractor.op ?: return null
         val value = extractor.value ?: return null
         val matcher = Matcher(source, op, value)
+        val rootHeight = root.bounds.height
         var bestIndex: Int? = null
         var bestArea = -1
-        walk(root) { node ->
+        walk(scope) { node ->
             if (!matches(matcher, node)) return@walk
+            if (rootHeight > 0 && node.bounds.height < rootHeight * 0.5) return@walk
             val index = deepestIndex(node) ?: return@walk
             val area = node.bounds.width * node.bounds.height
             if (area >= bestArea) {
@@ -111,8 +129,11 @@ class RuleEngine {
         include: Set<String>,
     ): String? {
         if (include.isEmpty()) return null
+        val minHeight = root.bounds.height * 0.2
         val builder = StringBuilder()
         walk(root) { node ->
+            if (node != root && node.bounds.height < minHeight) return@walk
+            if (isChrome(node)) return@walk
             if ("viewId" in include) builder.append(node.viewId ?: "").append('|')
             if ("className" in include) builder.append(node.className ?: "").append('|')
             if ("boundsBucket" in include) builder.append(node.bounds.bucket()).append('|')
@@ -181,5 +202,12 @@ private fun matches(
 }
 
 private val regexCache = HashMap<String, Pattern>()
+
+private val chromeTokens = listOf("like", "comment", "share", "send_button", "ufi_", "progress", "toolbar", "action_bar")
+
+private fun isChrome(node: NodeSnapshot): Boolean {
+    val id = node.viewId?.lowercase() ?: return false
+    return chromeTokens.any { token -> id.contains(token) }
+}
 
 private fun regex(value: String): Pattern = regexCache.getOrPut(value) { Pattern.compile(value) }

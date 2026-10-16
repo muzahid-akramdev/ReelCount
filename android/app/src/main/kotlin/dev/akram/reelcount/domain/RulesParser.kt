@@ -53,12 +53,15 @@ object RulesParser {
             val value = signal.getString("value")
             val op = matchOp(signal.getString("op"))
             validatePattern(op, value)
+            val ratio = signal.optDouble("minHeightRatio", 0.0)
+            require(ratio in 0.0..1.0) { "minHeightRatio out of range" }
             signals.add(
                 Signal(
                     source = matchSource(signal.getString("source")),
                     op = op,
                     value = value,
                     score = signal.getInt("score"),
+                    minHeightRatio = ratio,
                 ),
             )
         }
