@@ -62,7 +62,12 @@ object NodeSnapshots {
                 }
             }
         }
-        val spoken = node.contentDescription?.toString()?.trim()?.take(180)?.ifBlank { null }
+        val spoken =
+            node.contentDescription
+                ?.toString()
+                ?.trim()
+                ?.take(180)
+                ?.ifBlank { null }
         val typed = node.text?.toString()?.trim()
         val description = spoken ?: typed?.takeIf { it.length in 1..48 && !it.contains('\n') }
         val info = node.collectionItemInfo

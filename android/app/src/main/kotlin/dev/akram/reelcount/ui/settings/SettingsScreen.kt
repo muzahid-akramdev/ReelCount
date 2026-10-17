@@ -326,9 +326,10 @@ private fun SyncSection(
             TextButton(onClick = { submit(true) }, enabled = !busy) { Text(stringResource(R.string.sync_sign_up)) }
             if (busy) {
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .size(18.dp),
+                    modifier =
+                        Modifier
+                            .padding(start = 8.dp)
+                            .size(18.dp),
                     strokeWidth = 2.dp,
                 )
             }
