@@ -21,6 +21,7 @@ android {
         val local = Properties()
         val file = rootProject.file("local.properties")
         if (file.exists()) file.inputStream().use { local.load(it) }
+
         fun secret(name: String): String {
             val value = local.getProperty(name) ?: System.getenv(name) ?: ""
             return value.replace("\\", "").replace("\"", "")
