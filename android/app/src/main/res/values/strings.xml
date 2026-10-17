@@ -78,4 +78,21 @@
     <string name="nudge_dismiss">Close</string>
     <string name="nudge_snooze_hour">1 hour</string>
     <string name="nudge_snooze_today">Rest of today</string>
+
+    <string name="sync_title">Cloud sync</string>
+    <string name="sync_off_hint">Off by default. Counts stay on this phone until you turn sync on.</string>
+    <string name="sync_toggle">Sync this phone</string>
+    <string name="sync_email">Email</string>
+    <string name="sync_password">Password</string>
+    <string name="sync_sign_in">Sign in</string>
+    <string name="sync_sign_up">Create account</string>
+    <string name="sync_sign_out">Sign out</string>
+    <string name="sync_now">Sync now</string>
+    <string name="sync_signed_in">Signed in as %1$s</string>
+    <string name="sync_need_login">Sign in before sync can run.</string>
+    <string name="sync_missing_keys">Add SUPABASE_URL and SUPABASE_ANON_KEY in android/local.properties, then rebuild.</string>
+    <string name="sync_confirm_email">Account created. Confirm the email, then sign in.</string>
+    <string name="sync_uploaded">Uploaded %1$d daily rows.</string>
+    <string name="sync_disabled_done">Sync is off.</string>
 </resources>
+

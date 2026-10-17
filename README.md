@@ -2,7 +2,7 @@
 
 ডিজিটাল ওয়েলবিইং: Facebook, Instagram ও YouTube-এ দিনে কতগুলো Reels/Shorts দেখা হয়, সেটা ফোনে গোনে। ভাসমান কাউন্টার শুধু রিল ভিউয়ার খোলা থাকলে দেখা যায়।
 
-Phase 1 (এই রিপো) অ্যান্ড্রয়েড ট্র্যাকার। সিঙ্ক ও ওয়েব ড্যাশবোর্ড পরে।
+Phase 1 অ্যান্ড্রয়েড ট্র্যাকার। Phase 2-এ ঐচ্ছিক Supabase সিঙ্ক (ডিফল্টে বন্ধ)। ওয়েব ড্যাশবোর্ড পরে।
 
 ## এখন কী করতে হবে
 
@@ -37,11 +37,20 @@ Room tables `events(id, ts, app)` and `daily_stats(day, app, count, est_seconds)
 
 | Phase | What | Status |
 |---|---|---|
-| 2 | Supabase sync, off by default | not started |
+| 2 | Supabase sync, off by default | Android client in this repo |
 | 3 | Next.js dashboard | not started |
 | 4 | Browser extension | not started |
 
-Supabase and Vercel env vars are not used yet. Do not put a service-role key in the app.
+## Phase 2 — Supabase
+
+Schema: [supabase/schema.sql](supabase/schema.sql). Run it once in the SQL editor if the tables are not there yet. Email auth must be enabled. RLS is `auth.uid() = user_id`.
+
+Copy [android/local.properties.example](android/local.properties.example) to `android/local.properties` and set `SUPABASE_URL` plus the **anon** key. Do not put the service-role key in the app or in git. `local.properties` is gitignored. A build without those values still works; sync then says the keys are missing.
+
+In the app: Settings → Cloud sync. Sign in, turn sync on (off by default). Counts stay in Room. Sync upserts absolute daily and hourly totals for this `device_id`, so repeating a sync does not double the numbers. WorkManager retries about every 6 hours when the network is up, and the app also tries once on open.
+
+GitHub Actions can bake the public values in if the repository secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` exist. They are optional.
+
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) and [docs/phase-1-proposal.md](docs/phase-1-proposal.md).
 

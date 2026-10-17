@@ -78,4 +78,21 @@
     <string name="nudge_dismiss">বন্ধ</string>
     <string name="nudge_snooze_hour">১ ঘণ্টা</string>
     <string name="nudge_snooze_today">আজকের বাকি সময়</string>
+
+    <string name="sync_title">ক্লাউড সিঙ্ক</string>
+    <string name="sync_off_hint">ডিফল্টে বন্ধ। সিঙ্ক চালু না করলে গণনা শুধু এই ফোনে থাকে।</string>
+    <string name="sync_toggle">এই ফোন সিঙ্ক করুন</string>
+    <string name="sync_email">ইমেইল</string>
+    <string name="sync_password">পাসওয়ার্ড</string>
+    <string name="sync_sign_in">সাইন ইন</string>
+    <string name="sync_sign_up">অ্যাকাউন্ট তৈরি</string>
+    <string name="sync_sign_out">সাইন আউট</string>
+    <string name="sync_now">এখনই সিঙ্ক</string>
+    <string name="sync_signed_in">সাইন ইন: %1$s</string>
+    <string name="sync_need_login">সিঙ্কের আগে সাইন ইন করুন।</string>
+    <string name="sync_missing_keys">android/local.properties-এ SUPABASE_URL ও SUPABASE_ANON_KEY দিয়ে আবার বিল্ড করুন।</string>
+    <string name="sync_confirm_email">অ্যাকাউন্ট তৈরি হয়েছে। ইমেইল নিশ্চিত করে তারপর সাইন ইন করুন।</string>
+    <string name="sync_uploaded">%1$dটি দৈনিক সারি আপলোড হয়েছে।</string>
+    <string name="sync_disabled_done">সিঙ্ক বন্ধ আছে।</string>
 </resources>
+

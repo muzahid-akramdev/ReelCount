@@ -13,8 +13,18 @@ android {
         applicationId = "dev.akram.reelcount"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.2.0"
+
+        val local = java.util.Properties()
+        val file = rootProject.file("local.properties")
+        if (file.exists()) file.inputStream().use { local.load(it) }
+        fun secret(name: String): String {
+            val value = local.getProperty(name) ?: System.getenv(name) ?: ""
+            return value.replace("\\", "").replace("\"", "")
+        }
+        buildConfigField("String", "SUPABASE_URL", "\"${secret("SUPABASE_URL")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${secret("SUPABASE_ANON_KEY")}\"")
     }
 
     buildTypes {
@@ -34,6 +44,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -77,6 +88,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("androidx.work:work-runtime-ktx:2.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250517")

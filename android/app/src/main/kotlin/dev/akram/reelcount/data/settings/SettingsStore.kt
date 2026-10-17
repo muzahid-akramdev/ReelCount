@@ -8,9 +8,11 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dev.akram.reelcount.sync.AuthSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 data class UserSettings(
     val dailyLimit: Int = 50,
@@ -26,6 +28,10 @@ data class UserSettings(
     val snoozeUntilEpochMs: Long = 0,
     val lastNudgeDay: String = "",
     val lastNudgedCount: Int = 0,
+    val syncEnabled: Boolean = false,
+    val accountEmail: String = "",
+    val lastSyncEpochMs: Long = 0,
+    val lastSyncError: String = "",
 )
 
 private val Context.dataStore by preferencesDataStore(name = "reelcount_settings")
@@ -108,6 +114,60 @@ class SettingsStore(
             it[Keys.NUDGE_COUNT] = count
         }
     }
+
+    suspend fun setSyncEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.SYNC] = enabled }
+    }
+
+    suspend fun deviceId(): String {
+        val existing = current().let { context.dataStore.data.first()[Keys.DEVICE] }
+        if (!existing.isNullOrBlank()) return existing
+        val created = UUID.randomUUID().toString()
+        context.dataStore.edit { it[Keys.DEVICE] = created }
+        return created
+    }
+
+    suspend fun saveSession(session: AuthSession) {
+        context.dataStore.edit {
+            it[Keys.ACCESS] = session.accessToken
+            it[Keys.REFRESH] = session.refreshToken
+            it[Keys.USER_ID] = session.userId
+            it[Keys.EMAIL] = session.email
+            it[Keys.EXPIRES] = session.expiresAtEpochMs
+        }
+    }
+
+    suspend fun currentSession(): AuthSession? {
+        val prefs = context.dataStore.data.first()
+        val access = prefs[Keys.ACCESS].orEmpty()
+        val refresh = prefs[Keys.REFRESH].orEmpty()
+        val userId = prefs[Keys.USER_ID].orEmpty()
+        if (access.isBlank() || refresh.isBlank() || userId.isBlank()) return null
+        return AuthSession(
+            accessToken = access,
+            refreshToken = refresh,
+            userId = userId,
+            email = prefs[Keys.EMAIL].orEmpty(),
+            expiresAtEpochMs = prefs[Keys.EXPIRES] ?: 0L,
+        )
+    }
+
+    suspend fun clearSession() {
+        context.dataStore.edit {
+            it.remove(Keys.ACCESS)
+            it.remove(Keys.REFRESH)
+            it.remove(Keys.USER_ID)
+            it.remove(Keys.EMAIL)
+            it.remove(Keys.EXPIRES)
+        }
+    }
+
+    suspend fun setLastSync(epochMs: Long, error: String) {
+        context.dataStore.edit {
+            it[Keys.LAST_SYNC] = epochMs
+            it[Keys.LAST_ERROR] = error
+        }
+    }
 }
 
 private object Keys {
@@ -124,6 +184,15 @@ private object Keys {
     val SNOOZE = longPreferencesKey("snooze_until")
     val NUDGE_DAY = stringPreferencesKey("nudge_day")
     val NUDGE_COUNT = intPreferencesKey("nudge_count")
+    val SYNC = booleanPreferencesKey("sync_enabled")
+    val DEVICE = stringPreferencesKey("device_id")
+    val ACCESS = stringPreferencesKey("sb_access")
+    val REFRESH = stringPreferencesKey("sb_refresh")
+    val USER_ID = stringPreferencesKey("sb_user")
+    val EMAIL = stringPreferencesKey("sb_email")
+    val EXPIRES = longPreferencesKey("sb_expires")
+    val LAST_SYNC = longPreferencesKey("last_sync")
+    val LAST_ERROR = stringPreferencesKey("last_sync_error")
 }
 
 val DefaultPackages =
@@ -160,5 +229,9 @@ private fun Preferences.toSettings(): UserSettings {
         snoozeUntilEpochMs = this[Keys.SNOOZE] ?: 0L,
         lastNudgeDay = this[Keys.NUDGE_DAY] ?: "",
         lastNudgedCount = this[Keys.NUDGE_COUNT] ?: 0,
+        syncEnabled = this[Keys.SYNC] ?: false,
+        accountEmail = this[Keys.EMAIL] ?: "",
+        lastSyncEpochMs = this[Keys.LAST_SYNC] ?: 0L,
+        lastSyncError = this[Keys.LAST_ERROR] ?: "",
     )
 }

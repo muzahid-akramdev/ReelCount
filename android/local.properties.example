@@ -1,0 +1,5 @@
+# Copy to android/local.properties (gitignored). Never commit the real key.
+# Project Settings → API → Project URL and the anon (public) key only.
+# Do not put the service_role key here.
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_ANON_KEY=your-anon-key

@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,6 +36,7 @@ import dev.akram.reelcount.R
 import dev.akram.reelcount.ReelCountApp
 import dev.akram.reelcount.applyLanguage
 import dev.akram.reelcount.data.settings.UserSettings
+import dev.akram.reelcount.sync.SyncOutcome
 import dev.akram.reelcount.ui.appLabel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -191,6 +193,7 @@ fun SettingsScreen(onOpenDebug: () -> Unit) {
         }) {
             Text(stringResource(R.string.action_export))
         }
+        SyncSection(settings, noticeSetter = { notice = it })
         TextButton(onClick = onOpenDebug) {
             Text(stringResource(R.string.action_open_debug))
         }
@@ -220,6 +223,97 @@ fun SettingsScreen(onOpenDebug: () -> Unit) {
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun SyncSection(
+    settings: UserSettings,
+    noticeSetter: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    val app = context.applicationContext as ReelCountApp
+    val scope = rememberCoroutineScope()
+    var email by remember(settings.accountEmail) { mutableStateOf(settings.accountEmail) }
+    var password by remember { mutableStateOf("") }
+    val signedIn = stringResource(R.string.sync_signed_in)
+    val needLogin = stringResource(R.string.sync_need_login)
+    val missing = stringResource(R.string.sync_missing_keys)
+    val confirmEmail = stringResource(R.string.sync_confirm_email)
+    val uploaded = stringResource(R.string.sync_uploaded)
+    val disabled = stringResource(R.string.sync_disabled_done)
+    Text(
+        stringResource(R.string.sync_title),
+        modifier = Modifier.padding(top = 16.dp),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Text(
+        stringResource(R.string.sync_off_hint),
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+    if (settings.accountEmail.isNotBlank()) {
+        Text(signedIn.format(settings.accountEmail))
+        TextButton(onClick = {
+            scope.launch {
+                app.container.sync.signOut()
+                password = ""
+            }
+        }) { Text(stringResource(R.string.sync_sign_out)) }
+    } else {
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text(stringResource(R.string.sync_email)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text(stringResource(R.string.sync_password)) },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row {
+            TextButton(onClick = {
+                scope.launch {
+                    runCatching { app.container.sync.signIn(email, password) }
+                        .onFailure { noticeSetter(it.message ?: needLogin) }
+                }
+            }) { Text(stringResource(R.string.sync_sign_in)) }
+            TextButton(onClick = {
+                scope.launch {
+                    runCatching { app.container.sync.signUp(email, password) }
+                        .onSuccess { createdSession ->
+                            noticeSetter(if (createdSession) signedIn.format(email.trim()) else confirmEmail)
+                        }.onFailure { noticeSetter(it.message ?: needLogin) }
+                }
+            }) { Text(stringResource(R.string.sync_sign_up)) }
+        }
+    }
+    ToggleRow(stringResource(R.string.sync_toggle), settings.syncEnabled) {
+        scope.launch { app.container.settings.setSyncEnabled(it) }
+    }
+    TextButton(onClick = {
+        scope.launch {
+            val outcome =
+                withContext(Dispatchers.IO) {
+                    app.container.sync.syncIfEnabled()
+                }
+            noticeSetter(
+                when (outcome) {
+                    is SyncOutcome.Uploaded -> uploaded.format(outcome.dailyRows)
+                    SyncOutcome.Disabled -> disabled
+                    SyncOutcome.NotConfigured -> missing
+                    SyncOutcome.NeedsLogin -> needLogin
+                    is SyncOutcome.Failed -> outcome.message
+                },
+            )
+        }
+    }) { Text(stringResource(R.string.sync_now)) }
+    if (settings.lastSyncError.isNotBlank()) {
+        Text(settings.lastSyncError, style = MaterialTheme.typography.bodySmall)
     }
 }
 

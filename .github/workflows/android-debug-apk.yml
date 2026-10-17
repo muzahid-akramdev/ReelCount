@@ -29,6 +29,9 @@ jobs:
 
       - name: Test and build
         working-directory: android
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           chmod +x gradlew
           ./gradlew :app:testDebugUnitTest :app:ktlintCheck :app:lintDebug :app:assembleDebug --stacktrace
