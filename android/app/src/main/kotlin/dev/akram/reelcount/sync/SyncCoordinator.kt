@@ -3,6 +3,8 @@ package dev.akram.reelcount.sync
 import dev.akram.reelcount.data.ReelRepository
 import dev.akram.reelcount.data.settings.SettingsStore
 import dev.akram.reelcount.domain.SyncBuckets
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.ZoneId
@@ -93,7 +95,8 @@ class SyncCoordinator(
         email: String,
         password: String,
     ) {
-        val session = apiFactory().signIn(email.trim(), password)
+        ensureConfigured()
+        val session = withContext(Dispatchers.IO) { apiFactory().signIn(email.trim(), password) }
         settings.saveSession(session)
     }
 
@@ -101,14 +104,20 @@ class SyncCoordinator(
         email: String,
         password: String,
     ): Boolean {
-        val session = apiFactory().signUp(email.trim(), password)
-        if (session == null) return false
+        ensureConfigured()
+        val session = withContext(Dispatchers.IO) { apiFactory().signUp(email.trim(), password) } ?: return false
         settings.saveSession(session)
         return true
     }
 
     suspend fun signOut() {
         settings.clearSession()
+    }
+
+    private fun ensureConfigured() {
+        if (!SupabaseConfig.isConfigured()) {
+            error("Add SUPABASE_URL and SUPABASE_ANON_KEY, then rebuild the app.")
+        }
     }
 
     private suspend fun ensureFresh(

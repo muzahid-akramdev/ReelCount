@@ -65,7 +65,7 @@
     <string name="rules_imported">আপনার ইমপোর্ট করা রুল চলছে।</string>
     <string name="action_open_debug">ডিবাগ ইনস্পেক্টর</string>
     <string name="debug_title">ইনস্পেক্টর</string>
-    <string name="debug_hint">একটা রিল খুলুন, ফিরে এসে ভিউ আইডি কপি করুন। স্ক্রিনের লেখা এখানে আসে না।</string>
+    <string name="debug_hint">একটা রিল খুলুন, ফিরে এসে ভিউ আইডি কপি করুন। ছোট লেবেল দেখায়। লম্বা ক্যাপশন আসে না।</string>
     <string name="debug_empty">এখনো কোনো ইভেন্ট নেই। সার্ভিস চালু রেখে Facebook, Instagram বা YouTube খুলুন।</string>
     <string name="debug_copy">কপি</string>
     <string name="debug_copied">কপি হয়েছে।</string>
@@ -92,6 +92,10 @@
     <string name="sync_need_login">সিঙ্কের আগে সাইন ইন করুন।</string>
     <string name="sync_missing_keys">android/local.properties-এ SUPABASE_URL ও SUPABASE_ANON_KEY দিয়ে আবার বিল্ড করুন।</string>
     <string name="sync_confirm_email">অ্যাকাউন্ট তৈরি হয়েছে। ইমেইল নিশ্চিত করে তারপর সাইন ইন করুন।</string>
+    <string name="sync_invalid">সঠিক ইমেইল দিন। পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে।</string>
+    <string name="sync_offline">নেটওয়ার্ক নেই। কানেকশন দেখে আবার চেষ্টা করুন।</string>
+    <string name="sync_working_in">সাইন ইন হচ্ছে…</string>
+    <string name="sync_working_up">অ্যাকাউন্ট তৈরি হচ্ছে…</string>
     <string name="sync_uploaded">%1$dটি দৈনিক সারি আপলোড হয়েছে।</string>
     <string name="sync_disabled_done">সিঙ্ক বন্ধ আছে।</string>
 </resources>

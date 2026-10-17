@@ -138,6 +138,10 @@ class Phase1LogicTest {
         assertTrue(engine.evaluate(facebook, facebookReels()).viewerActive)
         assertFalse(engine.evaluate(lite, liteTab()).viewerActive)
         assertTrue(engine.evaluate(lite, liteReels()).viewerActive)
+        assertTrue(engine.evaluate(lite, liteVideoTab()).viewerActive)
+        assertTrue(engine.evaluate(lite, liteSurface()).viewerActive)
+        assertFalse(engine.evaluate(lite, liteHomeFeed()).viewerActive)
+        assertFalse(engine.evaluate(lite, liteStory()).viewerActive)
     }
 
     @Test
@@ -249,6 +253,30 @@ class Phase1LogicTest {
 
     private fun liteReels(): NodeSnapshot = node(null, "android.view.View", "রিল", 0, 0, 1080, 1920, null)
 
+    private fun liteVideoTab(): NodeSnapshot {
+        val tab = node(null, "android.view.View", "ভিডিও", 200, 1800, 400, 1920, null, selected = true)
+        val page = node(null, "android.webkit.WebView", null, 0, 0, 1080, 1750, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(page, tab))
+    }
+
+    private fun liteSurface(): NodeSnapshot {
+        val surface = node(null, "android.view.SurfaceView", null, 0, 0, 1080, 1920, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(surface))
+    }
+
+    private fun liteHomeFeed(): NodeSnapshot {
+        val web = node(null, "android.webkit.WebView", null, 0, 0, 1080, 1700, null)
+        val like = node(null, "android.view.View", "Like", 900, 700, 1040, 780, null)
+        val home = node(null, "android.view.View", "হোম", 0, 1800, 180, 1920, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(web, like, home))
+    }
+
+    private fun liteStory(): NodeSnapshot {
+        val surface = node(null, "android.view.SurfaceView", null, 0, 0, 1080, 1920, null)
+        val story = node(null, "android.view.View", "Story", 40, 80, 200, 160, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(surface, story))
+    }
+
     private fun reelTree(inbox: Boolean): NodeSnapshot {
         val inboxNode =
             if (inbox) {
@@ -292,7 +320,8 @@ class Phase1LogicTest {
         bottom: Int,
         index: Int?,
         children: List<NodeSnapshot> = emptyList(),
-    ): NodeSnapshot = NodeSnapshot(viewId, className, description, Bounds(left, top, right, bottom), index, children)
+        selected: Boolean = false,
+    ): NodeSnapshot = NodeSnapshot(viewId, className, description, Bounds(left, top, right, bottom), index, children, selected)
 
     private companion object {
         val SAMPLE =

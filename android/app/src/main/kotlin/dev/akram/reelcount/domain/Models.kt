@@ -31,16 +31,20 @@ data class NodeSnapshot(
     val bounds: Bounds,
     val collectionIndex: Int?,
     val children: List<NodeSnapshot>,
+    val selected: Boolean = false,
 )
 
 enum class MatchSource { VIEW_ID, CLASS_NAME, CONTENT_DESCRIPTION }
 
 enum class MatchOp { EQUALS, CONTAINS, REGEX }
 
+enum class MatchRegion { ANY, BOTTOM }
+
 data class Matcher(
     val source: MatchSource,
     val op: MatchOp,
     val value: String,
+    val region: MatchRegion = MatchRegion.ANY,
 )
 
 data class Signal(
@@ -49,6 +53,7 @@ data class Signal(
     val value: String,
     val score: Int,
     val minHeightRatio: Double = 0.0,
+    val requireSelected: Boolean = false,
 )
 
 enum class ExtractorKind { PAGER_INDEX, STRUCTURAL_HASH }

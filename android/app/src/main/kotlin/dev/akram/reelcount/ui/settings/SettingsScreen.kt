@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -36,6 +38,7 @@ import dev.akram.reelcount.R
 import dev.akram.reelcount.ReelCountApp
 import dev.akram.reelcount.applyLanguage
 import dev.akram.reelcount.data.settings.UserSettings
+import dev.akram.reelcount.sync.SupabaseConfig
 import dev.akram.reelcount.sync.SyncOutcome
 import dev.akram.reelcount.ui.appLabel
 import kotlinx.coroutines.Dispatchers
@@ -236,12 +239,55 @@ private fun SyncSection(
     val scope = rememberCoroutineScope()
     var email by remember(settings.accountEmail) { mutableStateOf(settings.accountEmail) }
     var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<String?>(null) }
     val signedIn = stringResource(R.string.sync_signed_in)
     val needLogin = stringResource(R.string.sync_need_login)
     val missing = stringResource(R.string.sync_missing_keys)
     val confirmEmail = stringResource(R.string.sync_confirm_email)
     val uploaded = stringResource(R.string.sync_uploaded)
     val disabled = stringResource(R.string.sync_disabled_done)
+    val invalid = stringResource(R.string.sync_invalid)
+    val offline = stringResource(R.string.sync_offline)
+    val workingIn = stringResource(R.string.sync_working_in)
+    val workingUp = stringResource(R.string.sync_working_up)
+    val submit: (Boolean) -> Unit = { signUp ->
+        if (!busy) {
+            val trimmed = email.trim()
+            if (!SupabaseConfig.isConfigured()) {
+                status = missing
+                noticeSetter(missing)
+            } else if (!trimmed.contains('@') || password.length < 6) {
+                status = invalid
+                noticeSetter(invalid)
+            } else {
+                busy = true
+                status = if (signUp) workingUp else workingIn
+                scope.launch {
+                    val result =
+                        runCatching {
+                            if (signUp) {
+                                app.container.sync.signUp(trimmed, password)
+                            } else {
+                                app.container.sync.signIn(trimmed, password)
+                                true
+                            }
+                        }
+                    busy = false
+                    result
+                        .onSuccess { created ->
+                            val message = if (created) signedIn.format(trimmed) else confirmEmail
+                            status = message
+                            noticeSetter(message)
+                        }.onFailure { error ->
+                            val message = authError(error, needLogin, offline)
+                            status = message
+                            noticeSetter(message)
+                        }
+                }
+            }
+        }
+    }
     Text(
         stringResource(R.string.sync_title),
         modifier = Modifier.padding(top = 16.dp),
@@ -275,21 +321,24 @@ private fun SyncSection(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
         )
-        Row {
-            TextButton(onClick = {
-                scope.launch {
-                    runCatching { app.container.sync.signIn(email, password) }
-                        .onFailure { noticeSetter(it.message ?: needLogin) }
-                }
-            }) { Text(stringResource(R.string.sync_sign_in)) }
-            TextButton(onClick = {
-                scope.launch {
-                    runCatching { app.container.sync.signUp(email, password) }
-                        .onSuccess { createdSession ->
-                            noticeSetter(if (createdSession) signedIn.format(email.trim()) else confirmEmail)
-                        }.onFailure { noticeSetter(it.message ?: needLogin) }
-                }
-            }) { Text(stringResource(R.string.sync_sign_up)) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { submit(false) }, enabled = !busy) { Text(stringResource(R.string.sync_sign_in)) }
+            TextButton(onClick = { submit(true) }, enabled = !busy) { Text(stringResource(R.string.sync_sign_up)) }
+            if (busy) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .size(18.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
+        if (!status.isNullOrBlank()) {
+            Text(
+                status ?: "",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
     ToggleRow(stringResource(R.string.sync_toggle), settings.syncEnabled) {
@@ -315,6 +364,24 @@ private fun SyncSection(
     if (settings.lastSyncError.isNotBlank()) {
         Text(settings.lastSyncError, style = MaterialTheme.typography.bodySmall)
     }
+}
+
+private fun authError(
+    error: Throwable,
+    fallback: String,
+    offline: String,
+): String {
+    val text = error.message?.trim().orEmpty()
+    val kind = error.javaClass.simpleName
+    val dropped =
+        kind.contains("UnknownHost") ||
+            kind.contains("Connect") ||
+            kind.contains("SocketTimeout") ||
+            text.contains("Unable to resolve", ignoreCase = true) ||
+            text.contains("failed to connect", ignoreCase = true) ||
+            text.contains("timeout", ignoreCase = true)
+    if (dropped) return offline
+    return text.ifBlank { fallback }.take(180)
 }
 
 @Composable

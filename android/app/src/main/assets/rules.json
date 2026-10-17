@@ -167,30 +167,63 @@
       "packageName": "com.facebook.lite",
       "enabled": true,
       "viewer": {
-        "minScore": 3,
+        "minScore": 4,
         "signals": [
           {
             "source": "viewId",
             "op": "regex",
-            "value": "(?i)reel|shorts|clips|video_fullscreen|fullscreen_video",
-            "score": 3,
-            "minHeightRatio": 0.6
+            "value": "(?i)reel|shorts|clips|video_fullscreen|fullscreen_video|watch_feed",
+            "score": 4,
+            "minHeightRatio": 0.45
           },
           {
             "source": "contentDescription",
             "op": "regex",
             "value": "(?i)(\\breels?\\b|\\bshorts?\\b|রিলস?|শর্টস)",
-            "score": 3,
-            "minHeightRatio": 0.6
+            "score": 4,
+            "minHeightRatio": 0.5
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)(reels?|shorts?|videos?|watch|রিল|ভিডিও|ওয়াচ|ওয়াচ|শর্টস)",
+            "score": 4,
+            "selected": true
           },
           {
             "source": "className",
             "op": "regex",
             "value": "(?i)(Reel|Clips|Shorts|Watch)[A-Za-z0-9_.]*Activity",
             "score": 4
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)(SurfaceView|TextureView|VideoView|PlayerView)",
+            "score": 4,
+            "minHeightRatio": 0.55
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)WebView",
+            "score": 1,
+            "minHeightRatio": 0.72
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)(\\blike\\b|\\bcomment\\b|\\bshare\\b|লাইক|পছন্দ|মন্তব্য|শেয়ার|শেয়ার|রিঅ্যাক্ট)",
+            "score": 2
           }
         ],
-        "blockers": []
+        "blockers": [
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)^(story|stories|স্টোরি|স্টোরিজ)$"
+          }
+        ]
       },
       "identity": {
         "extractors": [
@@ -202,7 +235,7 @@
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId", "className"]
+            "include": ["labelHash"]
           }
         ]
       }

@@ -31,7 +31,8 @@ object NodeSnapshots {
             val cls = node.className?.substringAfterLast('.') ?: "-"
             val desc = node.contentDescription?.take(120) ?: ""
             val index = node.collectionIndex?.let { " #$it" }.orEmpty()
-            lines.add("$indent$id | $cls$index | $desc")
+            val selected = if (node.selected) " [selected]" else ""
+            lines.add("$indent$id | $cls$index$selected | $desc")
             node.children.forEach { walk(it, depth + 1) }
         }
         walk(root, 0)
@@ -61,21 +62,32 @@ object NodeSnapshots {
                 }
             }
         }
-        val description = node.contentDescription?.toString()?.take(180)
+        val spoken = node.contentDescription?.toString()?.trim()?.take(180)?.ifBlank { null }
+        val typed = node.text?.toString()?.trim()
+        val description = spoken ?: typed?.takeIf { it.length in 1..48 && !it.contains('\n') }
         val info = node.collectionItemInfo
-        val index =
+        val itemIndex =
             when {
                 info == null -> null
                 info.rowIndex == 0 && info.columnIndex > 0 -> info.columnIndex
                 else -> info.rowIndex
             }
+        val state = if (android.os.Build.VERSION.SDK_INT >= 30) node.stateDescription?.toString() else null
+        val selected =
+            node.isSelected ||
+                node.isChecked ||
+                state?.contains("select", ignoreCase = true) == true ||
+                state?.contains("নির্বাচিত") == true ||
+                description?.contains("selected", ignoreCase = true) == true ||
+                description?.contains("নির্বাচিত") == true
         return NodeSnapshot(
             viewId = node.viewIdResourceName,
             className = node.className?.toString(),
             contentDescription = description,
             bounds = Bounds(rect.left, rect.top, rect.right, rect.bottom),
-            collectionIndex = index,
+            collectionIndex = itemIndex,
             children = children,
+            selected = selected,
         )
     }
 }

@@ -163,20 +163,36 @@ class SupabaseApi(
     ): Request.Builder {
         header("apikey", anonKey)
         header("Content-Type", "application/json")
-        if (!bearer.isNullOrBlank()) header("Authorization", "Bearer $bearer")
+        if (!bearer.isNullOrBlank()) {
+            header("Authorization", "Bearer $bearer")
+        } else {
+            header("Authorization", "Bearer $anonKey")
+        }
         if (!prefer.isNullOrBlank()) header("Prefer", prefer)
         return this
+    }
+
+    private fun errorMessage(
+        text: String,
+        code: Int,
+    ): String {
+        val json = runCatching { JSONObject(text) }.getOrNull()
+        if (json != null) {
+            val msg =
+                listOf("msg", "message", "error_description", "error")
+                    .asSequence()
+                    .map { json.optString(it) }
+                    .firstOrNull { it.isNotBlank() && it != "null" }
+            if (!msg.isNullOrBlank()) return msg.take(180)
+        }
+        return text.take(180).ifBlank { "HTTP $code" }
     }
 
     private fun execute(request: Request): JSONObject {
         client.newCall(request).execute().use { response ->
             val text = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
-                val detail =
-                    runCatching { JSONObject(text).optString("msg") }.getOrNull()
-                        ?: runCatching { JSONObject(text).optString("message") }.getOrNull()
-                        ?: text.take(180)
-                throw IllegalStateException(detail.ifBlank { "HTTP ${response.code}" })
+                throw IllegalStateException(errorMessage(text, response.code))
             }
             if (text.isBlank()) return JSONObject()
             return if (text.trimStart().startsWith("{")) JSONObject(text) else JSONObject()

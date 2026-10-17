@@ -62,6 +62,7 @@ object RulesParser {
                     value = value,
                     score = signal.getInt("score"),
                     minHeightRatio = ratio,
+                    requireSelected = signal.optBoolean("selected", false),
                 ),
             )
         }
@@ -73,7 +74,14 @@ object RulesParser {
                 val value = blocker.getString("value")
                 val op = matchOp(blocker.getString("op"))
                 validatePattern(op, value)
-                blockers.add(Matcher(matchSource(blocker.getString("source")), op, value))
+                blockers.add(
+                    Matcher(
+                        matchSource(blocker.getString("source")),
+                        op,
+                        value,
+                        region(blocker.optString("region", "any")),
+                    ),
+                )
             }
         }
         val identityJson = json.getJSONObject("identity")
@@ -158,5 +166,12 @@ object RulesParser {
 
     private val PACKAGE = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$")
     private val ID = Regex("^[a-z0-9_]+$")
-    private val INCLUDE = setOf("viewId", "className", "boundsBucket", "contentDescriptionHash")
+    private val INCLUDE = setOf("viewId", "className", "boundsBucket", "contentDescriptionHash", "labelHash")
+
+    private fun region(raw: String): MatchRegion =
+        when (raw) {
+            "any", "" -> MatchRegion.ANY
+            "bottom" -> MatchRegion.BOTTOM
+            else -> error("bad region $raw")
+        }
 }

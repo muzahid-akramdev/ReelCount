@@ -7,7 +7,7 @@ class RuleEngine {
         rule: AppRule,
         root: NodeSnapshot,
     ): Evaluation {
-        if (rule.viewer.blockers.any { blocker -> treeAny(root) { matches(blocker, it) } }) {
+        if (rule.viewer.blockers.any { blocker -> treeAny(root) { matches(blocker, it) && inRegion(blocker, it, root) } }) {
             return Evaluation(viewerActive = false, identity = null, index = null)
         }
         var score = 0
@@ -75,6 +75,7 @@ class RuleEngine {
         node: NodeSnapshot,
         root: NodeSnapshot,
     ): Boolean {
+        if (signal.requireSelected && !node.selected) return false
         if (!matches(signal, node)) return false
         if (signal.minHeightRatio <= 0.0) return true
         val rootHeight = root.bounds.height
@@ -130,8 +131,14 @@ class RuleEngine {
     ): String? {
         if (include.isEmpty()) return null
         val minHeight = root.bounds.height * 0.2
+        val structural = include.any { it != "labelHash" }
         val builder = StringBuilder()
         walk(root) { node ->
+            if ("labelHash" in include) {
+                val label = stableLabel(node)
+                if (label != null) builder.append(label.hashCode()).append(';')
+            }
+            if (!structural) return@walk
             if (node != root && node.bounds.height < minHeight) return@walk
             if (isChrome(node)) return@walk
             if ("viewId" in include) builder.append(node.viewId ?: "").append('|')
@@ -208,6 +215,48 @@ private val chromeTokens = listOf("like", "comment", "share", "send_button", "uf
 private fun isChrome(node: NodeSnapshot): Boolean {
     val id = node.viewId?.lowercase() ?: return false
     return chromeTokens.any { token -> id.contains(token) }
+}
+
+private fun inRegion(
+    matcher: Matcher,
+    node: NodeSnapshot,
+    root: NodeSnapshot,
+): Boolean {
+    if (matcher.region != MatchRegion.BOTTOM) return true
+    val height = root.bounds.height
+    if (height <= 0) return false
+    val mid = (node.bounds.top + node.bounds.bottom) / 2
+    return mid >= root.bounds.top + (height * 0.72).toInt()
+}
+
+private val numericLabel = Regex("^[0-9][0-9.,]*[kKmM]?$")
+
+private val labelChrome =
+    listOf(
+        "like",
+        "comment",
+        "share",
+        "send",
+        "follow",
+        "pause",
+        "play",
+        "react",
+        "লাইক",
+        "পছন্দ",
+        "মন্তব্য",
+        "শেয়ার",
+        "শেয়ার",
+        "ফলো",
+        "বিরাম",
+    )
+
+private fun stableLabel(node: NodeSnapshot): String? {
+    val raw = node.contentDescription?.trim().orEmpty()
+    if (raw.length !in 2..48 || raw.contains('\n')) return null
+    if (numericLabel.matches(raw)) return null
+    val lower = raw.lowercase()
+    if (labelChrome.any { token -> lower.contains(token) }) return null
+    return lower
 }
 
 private fun regex(value: String): Pattern = regexCache.getOrPut(value) { Pattern.compile(value) }

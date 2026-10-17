@@ -65,7 +65,7 @@
     <string name="rules_imported">Using rules you imported.</string>
     <string name="action_open_debug">Debug inspector</string>
     <string name="debug_title">Inspector</string>
-    <string name="debug_hint">Open a reel, come back, and copy the view ids. Text from the screen is not included.</string>
+    <string name="debug_hint">Open a reel, come back, and copy the view ids. Short labels are included. Long captions are not.</string>
     <string name="debug_empty">No events yet. Open Facebook, Instagram or YouTube with the service on.</string>
     <string name="debug_copy">Copy</string>
     <string name="debug_copied">Copied.</string>
@@ -92,6 +92,10 @@
     <string name="sync_need_login">Sign in before sync can run.</string>
     <string name="sync_missing_keys">Add SUPABASE_URL and SUPABASE_ANON_KEY in android/local.properties, then rebuild.</string>
     <string name="sync_confirm_email">Account created. Confirm the email, then sign in.</string>
+    <string name="sync_invalid">Enter a valid email and a password of at least 6 characters.</string>
+    <string name="sync_offline">No network. Check the connection and try again.</string>
+    <string name="sync_working_in">Signing in…</string>
+    <string name="sync_working_up">Creating account…</string>
     <string name="sync_uploaded">Uploaded %1$d daily rows.</string>
     <string name="sync_disabled_done">Sync is off.</string>
 </resources>
