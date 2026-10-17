@@ -51,7 +51,10 @@ class SupabaseApi(
         return sessionFrom(json, json.optJSONObject("user")?.optString("email").orEmpty())
     }
 
-    fun upsertDaily(token: String, rows: JSONArray) {
+    fun upsertDaily(
+        token: String,
+        rows: JSONArray,
+    ) {
         if (rows.length() == 0) return
         postJson(
             "/rest/v1/daily_counts?on_conflict=user_id,device_id,day,app",
@@ -61,7 +64,10 @@ class SupabaseApi(
         )
     }
 
-    fun upsertHourly(token: String, rows: JSONArray) {
+    fun upsertHourly(
+        token: String,
+        rows: JSONArray,
+    ) {
         if (rows.length() == 0) return
         postJson(
             "/rest/v1/hourly_counts?on_conflict=user_id,device_id,day,hour,app",

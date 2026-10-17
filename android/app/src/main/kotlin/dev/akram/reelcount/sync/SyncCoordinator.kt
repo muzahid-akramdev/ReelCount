@@ -8,11 +8,20 @@ import org.json.JSONObject
 import java.time.ZoneId
 
 sealed class SyncOutcome {
-    data class Uploaded(val dailyRows: Int, val hourlyRows: Int) : SyncOutcome()
+    data class Uploaded(
+        val dailyRows: Int,
+        val hourlyRows: Int,
+    ) : SyncOutcome()
+
     data object Disabled : SyncOutcome()
+
     data object NotConfigured : SyncOutcome()
+
     data object NeedsLogin : SyncOutcome()
-    data class Failed(val message: String) : SyncOutcome()
+
+    data class Failed(
+        val message: String,
+    ) : SyncOutcome()
 }
 
 class SyncCoordinator(
@@ -80,12 +89,18 @@ class SyncCoordinator(
         }
     }
 
-    suspend fun signIn(email: String, password: String) {
+    suspend fun signIn(
+        email: String,
+        password: String,
+    ) {
         val session = apiFactory().signIn(email.trim(), password)
         settings.saveSession(session)
     }
 
-    suspend fun signUp(email: String, password: String): Boolean {
+    suspend fun signUp(
+        email: String,
+        password: String,
+    ): Boolean {
         val session = apiFactory().signUp(email.trim(), password)
         if (session == null) return false
         settings.saveSession(session)
@@ -96,14 +111,20 @@ class SyncCoordinator(
         settings.clearSession()
     }
 
-    private suspend fun ensureFresh(api: SupabaseApi, session: AuthSession): AuthSession {
+    private suspend fun ensureFresh(
+        api: SupabaseApi,
+        session: AuthSession,
+    ): AuthSession {
         if (session.expiresAtEpochMs - System.currentTimeMillis() > 60_000L) return session
         val refreshed = api.refresh(session.refreshToken)
         settings.saveSession(refreshed)
         return refreshed
     }
 
-    private fun chunk(rows: JSONArray, send: (JSONArray) -> Unit) {
+    private fun chunk(
+        rows: JSONArray,
+        send: (JSONArray) -> Unit,
+    ) {
         var index = 0
         while (index < rows.length()) {
             val slice = JSONArray()

@@ -162,7 +162,10 @@ class SettingsStore(
         }
     }
 
-    suspend fun setLastSync(epochMs: Long, error: String) {
+    suspend fun setLastSync(
+        epochMs: Long,
+        error: String,
+    ) {
         context.dataStore.edit {
             it[Keys.LAST_SYNC] = epochMs
             it[Keys.LAST_ERROR] = error

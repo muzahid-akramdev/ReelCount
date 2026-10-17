@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -16,7 +18,7 @@ android {
         versionCode = 3
         versionName = "0.2.0"
 
-        val local = java.util.Properties()
+        val local = Properties()
         val file = rootProject.file("local.properties")
         if (file.exists()) file.inputStream().use { local.load(it) }
         fun secret(name: String): String {
