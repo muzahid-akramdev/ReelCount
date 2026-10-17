@@ -2,7 +2,7 @@
 
 ডিজিটাল ওয়েলবিইং: Facebook, Instagram ও YouTube-এ দিনে কতগুলো Reels/Shorts দেখা হয়, সেটা ফোনে গোনে। ভাসমান কাউন্টার শুধু রিল ভিউয়ার খোলা থাকলে দেখা যায়।
 
-Phase 1 অ্যান্ড্রয়েড ট্র্যাকার। Phase 2-এ ঐচ্ছিক Supabase সিঙ্ক (ডিফল্টে বন্ধ)। ওয়েব ড্যাশবোর্ড পরে।
+Phase 1 অ্যান্ড্রয়েড ট্র্যাকার। Phase 2-এ ঐচ্ছিক Supabase সিঙ্ক (ডিফল্টে বন্ধ)। ওয়েব ড্যাশবোর্ড `web/`-এ।
 
 ## এখন কী করতে হবে
 
@@ -38,7 +38,7 @@ Room tables `events(id, ts, app)` and `daily_stats(day, app, count, est_seconds)
 | Phase | What | Status |
 |---|---|---|
 | 2 | Supabase sync, off by default | Android client in this repo |
-| 3 | Next.js dashboard | not started |
+| 3 | Next.js dashboard | in `web/` |
 | 4 | Browser extension | not started |
 
 ## Phase 2 — Supabase

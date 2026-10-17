@@ -1,0 +1,51 @@
+{
+  "nav": { "today": "Today", "history": "History", "settings": "Settings", "signOut": "Sign out" },
+  "login": {
+    "title": "ReelCount",
+    "subtitle": "See how many Reels and Shorts you watched. Counts stay on your phone until you turn sync on.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "needAccount": "Use the same email you created in the Android app."
+  },
+  "dash": {
+    "title": "Today",
+    "ofLimit": "of {limit}",
+    "watch": "Estimated watch time",
+    "minutes": "{n} min",
+    "under": "Under a minute",
+    "byApp": "By app",
+    "empty": "Nothing synced for today. Turn sync on in the Android app, then open this page again.",
+    "week": "This week vs last week",
+    "fewer": "{n}% fewer than last week",
+    "more": "{n}% more than last week",
+    "same": "About the same as last week",
+    "noPrior": "Not enough data for a weekly comparison yet."
+  },
+  "history": {
+    "title": "History",
+    "d7": "7 days",
+    "d30": "30 days",
+    "d90": "90 days",
+    "bars": "Reels per day",
+    "heat": "Hour of day",
+    "best": "Lightest day",
+    "worst": "Heaviest day",
+    "streak": "Days at or under the limit",
+    "empty": "No synced days in this range."
+  },
+  "settings": {
+    "title": "Settings",
+    "limit": "Daily limit",
+    "language": "Language",
+    "save": "Save",
+    "saved": "Saved.",
+    "export": "Export CSV",
+    "delete": "Delete synced data",
+    "deleteBody": "This removes your cloud rows. The phone keeps its own copy until you delete it there too.",
+    "confirm": "Delete",
+    "cancel": "Cancel",
+    "deleted": "Cloud data deleted."
+  },
+  "common": { "loading": "Loading…", "error": "Something went wrong." }
+}

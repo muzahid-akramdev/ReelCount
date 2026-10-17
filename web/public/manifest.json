@@ -1,0 +1,11 @@
+{
+  "name": "ReelCount",
+  "short_name": "ReelCount",
+  "start_url": "/en/dashboard",
+  "display": "standalone",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
