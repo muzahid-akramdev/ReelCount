@@ -29,12 +29,20 @@ function History() {
   const [best, setBest] = useState<string>("");
   const [worst, setWorst] = useState<string>("");
   const [streakDays, setStreakDays] = useState(0);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const supabase = browserSupabase();
     const today = todayKey();
     const from = daysBack(Math.max(range, 14), today)[0];
     setLoading(true);
+    let supabase;
+    try {
+      supabase = browserSupabase();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "config");
+      setLoading(false);
+      return;
+    }
     Promise.all([
       supabase.from("daily_counts").select("day,app,reels_count,est_seconds").gte("day", from),
       supabase.from("hourly_counts").select("day,hour,app,reels_count").gte("day", daysBack(range, today)[0]),
@@ -77,8 +85,9 @@ function History() {
         ))}
       </div>
       {loading ? <div className="h-40 animate-pulse rounded-2xl bg-zinc-800" /> : null}
-      {!loading && empty ? <p className="text-sm text-zinc-500">{t("empty")}</p> : null}
-      {!loading && !empty ? (
+      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {!loading && !error && empty ? <p className="text-sm text-zinc-500">{t("empty")}</p> : null}
+      {!loading && !error && !empty ? (
         <section className="h-52 rounded-2xl bg-zinc-900 p-2">
           <p className="px-2 text-sm text-zinc-400">{t("bars")}</p>
           <ResponsiveContainer width="100%" height="85%">

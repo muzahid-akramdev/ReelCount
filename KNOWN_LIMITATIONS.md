@@ -10,7 +10,7 @@
 - খুব দ্রুত দুইবার সোয়াইপ করলে একটা কম গুনতে পারে।
 - আনুমানিক দেখার সময় দুই গণনার ব্যবধান, প্রতিটা সর্বোচ্চ ১৮০ সেকেন্ড।
 - Xiaomi, Oppo, Vivo-র Autostart অ্যাপ নিজে চালু করতে পারে না।
-- সিঙ্ক, ওয়েব ড্যাশবোর্ড ও ব্রাউজার এক্সটেনশন এই ফেজে নেই।
+- সিঙ্ক ডিফল্টে বন্ধ। চালু করলে শুধু কাউন্ট ও সময় Supabase-এ যায়, ক্যাপশন যায় না। ওয়েব ড্যাশবোর্ড সেই সারিগুলো দেখায়। ব্রাউজার এক্সটেনশন এখনো নেই।
 
 ## English
 
@@ -22,4 +22,4 @@
 - A very fast double swipe can under-count by one. The manual test allows ±1.
 - Estimated watch time is the gap between counts, capped at 180 seconds each.
 - OEM autostart (Xiaomi, Oppo, Vivo) cannot be granted by the app.
-- Sync, the web dashboard and the browser extension are later phases. Sync stays off.
+- Sync is off until you turn it on. It uploads counts and estimated time only, not captions. The web dashboard reads those rows. The browser extension is not built.

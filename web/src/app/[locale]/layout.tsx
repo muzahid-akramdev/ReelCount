@@ -1,8 +1,17 @@
 import type { Metadata, Viewport } from "next";
+import { Noto_Sans, Noto_Sans_Bengali } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { PwaRegister } from "@/components/PwaRegister";
 import "../globals.css";
+
+const noto = Noto_Sans({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-noto" });
+const notoBn = Noto_Sans_Bengali({
+  subsets: ["bengali"],
+  weight: ["400", "600", "700"],
+  variable: "--font-noto-bn",
+});
 
 export const metadata: Metadata = {
   title: "ReelCount",
@@ -28,15 +37,9 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   return (
-    <html lang={locale} className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang={locale} className={`dark ${noto.variable} ${notoBn.variable}`}>
       <body className="min-h-screen font-sans">
+        <PwaRegister />
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>

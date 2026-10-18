@@ -2,7 +2,7 @@
 
 ডিজিটাল ওয়েলবিইং: Facebook, Instagram ও YouTube-এ দিনে কতগুলো Reels/Shorts দেখা হয়, সেটা ফোনে গোনে। ভাসমান কাউন্টার শুধু রিল ভিউয়ার খোলা থাকলে দেখা যায়।
 
-Phase 1 অ্যান্ড্রয়েড ট্র্যাকার। Phase 2-এ ঐচ্ছিক Supabase সিঙ্ক (ডিফল্টে বন্ধ)। ওয়েব ড্যাশবোর্ড `web/`-এ।
+Phase 1 অ্যান্ড্রয়েড ট্র্যাকার। Phase 2-এ ঐচ্ছিক Supabase সিঙ্ক (ডিফল্টে বন্ধ)। Phase 3 ওয়েব ড্যাশবোর্ড `web/`-এ।
 
 ## এখন কী করতে হবে
 
@@ -51,6 +51,18 @@ In the app: Settings → Cloud sync. Sign in, turn sync on (off by default). Cou
 
 GitHub Actions can bake the public values in if the repository secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` exist. They are optional.
 
+## Phase 3 — web dashboard
+
+Next.js app in [web/](web/). Same email as the Android app. Pages: `/login`, `/dashboard` (today, limit ring, per-app donut, watch time, weekly sentence), `/history` (7/30/90 days, hour heatmap, lightest/heaviest day, streak), `/settings` (limit, bn/en, CSV, delete cloud rows).
+
+```bash
+cd web
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` only. The service-role key is for `npm run seed`, never a `NEXT_PUBLIC_` variable. On Vercel, set the project root to `web`. Details: [web/README.md](web/README.md).
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) and [docs/phase-1-proposal.md](docs/phase-1-proposal.md).
 
@@ -60,4 +72,4 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) and [docs/phase-1-proposal.md](
 - Leave the viewer and open it again. The next video counts once.
 - Force-stop the app, open it, confirm the service status card.
 - Cross local midnight. The home total starts again at 0; history keeps yesterday.
-- Turn off the network. Counts still save on the phone. Sync does not exist yet.
+- Turn off the network. Counts still save on the phone. Turn the network back on and open the app; the dashboard shows the same totals after sync.

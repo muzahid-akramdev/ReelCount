@@ -30,7 +30,14 @@ function Dashboard() {
   const [insight, setInsight] = useState<{ kind: "none" | "same" | "fewer" | "more"; pct: number }>({ kind: "none", pct: 0 });
 
   useEffect(() => {
-    const supabase = browserSupabase();
+    let supabase;
+    try {
+      supabase = browserSupabase();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "config");
+      setLoading(false);
+      return;
+    }
     const today = todayKey();
     const from = addDays(today, -14);
     Promise.all([

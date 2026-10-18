@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { browserSupabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -13,15 +13,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    try {
+      browserSupabase()
+        .auth.getSession()
+        .then(({ data }) => {
+          if (data.session) router.replace(`/${locale}/dashboard`);
+        });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "");
+    }
+  }, [locale, router]);
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    const { error: authError } = await browserSupabase().auth.signInWithPassword({ email: email.trim(), password });
-    if (authError) {
-      setError(authError.message);
-      return;
+    try {
+      const { error: authError } = await browserSupabase().auth.signInWithPassword({ email: email.trim(), password });
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      router.replace(`/${locale}/dashboard`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "");
     }
-    router.replace(`/${locale}/dashboard`);
   }
 
   return (

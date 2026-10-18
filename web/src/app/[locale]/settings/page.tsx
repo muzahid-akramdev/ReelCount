@@ -26,7 +26,14 @@ function Settings() {
   const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
-    browserSupabase()
+    let supabase;
+    try {
+      supabase = browserSupabase();
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "");
+      return;
+    }
+    supabase
       .from("profiles")
       .select("daily_limit,locale")
       .maybeSingle()

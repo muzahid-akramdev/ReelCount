@@ -11,14 +11,23 @@ export function Shell({ locale, children }: { locale: string; children: React.Re
   const path = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [configError, setConfigError] = useState("");
 
   useEffect(() => {
-    const supabase = browserSupabase();
+    let supabase;
+    try {
+      supabase = browserSupabase();
+    } catch (error) {
+      setConfigError(error instanceof Error ? error.message : "Missing Supabase env");
+      return;
+    }
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) router.replace(`/${locale}/login`);
       else setReady(true);
     });
   }, [locale, router]);
+
+  if (configError) return <p className="p-6 text-red-400">{configError}</p>;
 
   if (!ready) return <p className="p-6 text-zinc-400">…</p>;
 
