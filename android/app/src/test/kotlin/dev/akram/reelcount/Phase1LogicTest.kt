@@ -158,6 +158,50 @@ class Phase1LogicTest {
     }
 
     @Test
+    fun coalescedScrollJumpCountsOnce() {
+        val gate = ScrollGate()
+        assertFalse(gate.onScroll(true, 0, 100, 8000, -1, -1, 0, 2000, 0))
+        assertTrue(gate.onScroll(true, 0, 1900, 8000, -1, -1, 24, 2000, 60))
+        assertFalse(gate.onScroll(true, 0, 1920, 8000, -1, -1, 20, 2000, 120))
+    }
+
+    @Test
+    fun viewPagerPageChangeCountsOncePerPage() {
+        val gate = ScrollGate()
+        assertFalse(gate.onScroll(true, 0, 0, 0, 4, 4, 0, 2000, 0))
+        assertTrue(gate.onScroll(true, 0, 0, 0, 5, 5, 0, 2000, 50))
+        assertFalse(gate.onScroll(true, 0, 40, 0, 5, 5, 40, 2000, 80))
+        assertTrue(gate.onScroll(true, 0, 40, 0, 6, 6, 0, 2000, 140))
+    }
+
+    @Test
+    fun movementAndTheSettlingPageAreOneReel() {
+        val gate = ScrollGate()
+        assertFalse(gate.onScroll(true, 0, 0, 0, 1, 1, 0, 2000, 0))
+        assertTrue(gate.onScroll(true, 0, 1600, 9000, 1, 1, 30, 2000, 40))
+        assertFalse(gate.onScroll(true, 0, 1800, 9000, 2, 2, 20, 2000, 90))
+        assertTrue(gate.onScroll(true, 0, 1800, 9000, 3, 3, 0, 2000, 160))
+    }
+
+    @Test
+    fun authorChangeIsANewReelAndFacebookPlayerOpens() {
+        val rules = RulesParser.parse(File("src/main/assets/rules.json").readText()).getOrThrow()
+        val engine = RuleEngine()
+        val instagram = rules.apps.first { it.packageName == "com.instagram.android" }
+        val facebook = rules.apps.first { it.packageName == "com.facebook.katana" }
+        val first = engine.evaluate(instagram, instagramAuthor("alice"))
+        val second = engine.evaluate(instagram, instagramAuthor("bob"))
+        assertTrue(first.viewerActive)
+        assertTrue(first.strongReelKey)
+        assertTrue(second.strongReelKey)
+        assertTrue(first.reelKey != null && first.reelKey != second.reelKey)
+        assertEquals(first.reelKey, engine.evaluate(instagram, instagramAuthor("alice")).reelKey)
+        assertTrue(engine.evaluate(facebook, facebookControls()).viewerActive)
+        assertTrue(engine.evaluate(facebook, facebookSurface()).viewerActive)
+        assertFalse(engine.evaluate(facebook, facebookCard()).viewerActive)
+    }
+
+    @Test
     fun viewerNeedsTheScoreAndABlockerWins() {
         val rules = RulesParser.parse(SAMPLE).getOrThrow()
         val engine = RuleEngine()
@@ -217,6 +261,37 @@ class Phase1LogicTest {
         assertTrue(csv.contains("event,1970-01-01T00:00"))
         assertTrue(csv.contains(",com.instagram.android,,"))
     }
+
+    private fun instagramAuthor(name: String): NodeSnapshot {
+        val author =
+            node(
+                "com.instagram.android:id/clips_author_username",
+                "android.widget.TextView",
+                name,
+                40,
+                1500,
+                400,
+                1580,
+                null,
+            )
+        val pager =
+            node(
+                "com.instagram.android:id/clips_viewer_view_pager",
+                "androidx.viewpager.widget.ViewPager",
+                null,
+                0,
+                0,
+                1080,
+                1920,
+                null,
+                listOf(author),
+            )
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager))
+    }
+
+    private fun facebookControls(): NodeSnapshot = node(null, "android.view.View", "Tap to show video controls", 0, 0, 1080, 1700, null)
+
+    private fun facebookSurface(): NodeSnapshot = node(null, "android.view.TextureView", null, 0, 0, 1080, 1920, null)
 
     private fun instagramFeed(): NodeSnapshot {
         val tab = node(null, "android.widget.ImageView", "Reels", 800, 1800, 1000, 1920, null)

@@ -103,6 +103,8 @@ data class Evaluation(
     val viewerActive: Boolean,
     val identity: String?,
     val index: Int?,
+    val reelKey: String? = null,
+    val strongReelKey: Boolean = false,
 )
 
 enum class LimitBand { GREEN, AMBER, RED }

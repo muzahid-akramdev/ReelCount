@@ -19,15 +19,21 @@
           {
             "source": "viewId",
             "op": "regex",
+            "value": "(?i)clips_viewer_view_pager|clips_viewer_container|clips_ufi_component|clips_author_username|clips_swipe_refresh",
+            "score": 4
+          },
+          {
+            "source": "viewId",
+            "op": "regex",
             "value": "(?i)clips_viewer|clips_media|clips_video|clips_item",
             "score": 4,
-            "minHeightRatio": 0.45
+            "minHeightRatio": 0.35
           },
           {
             "source": "contentDescription",
             "op": "regex",
             "value": "(?i)(\\breels?\\b|রিলস?)",
-            "score": 3,
+            "score": 4,
             "selected": true
           },
           {
@@ -35,7 +41,7 @@
             "op": "regex",
             "value": "(?i)(\\breels?\\b|রিলস?)",
             "score": 4,
-            "minHeightRatio": 0.7
+            "minHeightRatio": 0.62
           },
           {
             "source": "className",
@@ -69,7 +75,9 @@
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId"]
+            "include": [
+              "viewId"
+            ]
           }
         ]
       }
@@ -120,7 +128,9 @@
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId"]
+            "include": [
+              "viewId"
+            ]
           }
         ]
       }
@@ -135,15 +145,28 @@
           {
             "source": "viewId",
             "op": "regex",
+            "value": "(?i)reel_viewer|reels_viewer|fb_shorts|shorts_viewer|fb_reels_viewer",
+            "score": 4
+          },
+          {
+            "source": "viewId",
+            "op": "regex",
             "value": "(?i)reel|fb_shorts|shorts_viewer",
             "score": 4,
-            "minHeightRatio": 0.55
+            "minHeightRatio": 0.45
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)(tap to show video controls|show video controls|video controls|ভিডিও নিয়ন্ত্রণ|ভিডিও নিয়ন্ত্রণ|কন্ট্রোল দেখ)",
+            "score": 4,
+            "minHeightRatio": 0.35
           },
           {
             "source": "contentDescription",
             "op": "regex",
             "value": "(?i)(\\breels?\\b|রিলস?)",
-            "score": 3,
+            "score": 4,
             "selected": true
           },
           {
@@ -151,7 +174,7 @@
             "op": "regex",
             "value": "(?i)(\\breels?\\b|রিলস?)",
             "score": 4,
-            "minHeightRatio": 0.7
+            "minHeightRatio": 0.62
           },
           {
             "source": "className",
@@ -159,6 +182,13 @@
             "value": "(?i)(ViewPager|RecyclerView)",
             "score": 2,
             "minHeightRatio": 0.62
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)(SurfaceView|TextureView)",
+            "score": 4,
+            "minHeightRatio": 0.75
           },
           {
             "source": "className",
@@ -185,7 +215,9 @@
           },
           {
             "kind": "structuralHash",
-            "include": ["viewId"]
+            "include": [
+              "viewId"
+            ]
           }
         ]
       }
@@ -263,7 +295,9 @@
           },
           {
             "kind": "structuralHash",
-            "include": ["labelHash"]
+            "include": [
+              "labelHash"
+            ]
           }
         ]
       }

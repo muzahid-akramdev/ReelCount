@@ -25,7 +25,14 @@ class RuleEngine {
         }
         val focus = bestFocus(rule, root)
         val (identity, index) = identityOf(rule.identity, focus, root)
-        return Evaluation(viewerActive = true, identity = identity, index = index)
+        val (reelKey, strong) = reelKey(root)
+        return Evaluation(
+            viewerActive = true,
+            identity = identity,
+            index = index,
+            reelKey = reelKey,
+            strongReelKey = strong,
+        )
     }
 
     private fun bestFocus(
@@ -161,6 +168,36 @@ class RuleEngine {
                 .toString(16)
         return "h$folded"
     }
+
+    /**
+     * A label that changes when the reel changes and stays put when someone
+     * likes, pauses, or opens a button. Author view ids are strong. A name
+     * drawn over the video is weak, and only used when no author id exists.
+     */
+    private fun reelKey(root: NodeSnapshot): Pair<String?, Boolean> {
+        var tagged: String? = null
+        var taggedTop = Int.MAX_VALUE
+        var fallback: String? = null
+        var fallbackTop = Int.MAX_VALUE
+        val height = root.bounds.height
+        val lower = if (height > 0) root.bounds.top + (height * 0.40).toInt() else Int.MAX_VALUE
+        walk(root) { node ->
+            val label = reelLabel(node) ?: return@walk
+            val id = node.viewId?.lowercase().orEmpty()
+            if (authorId.containsMatchIn(id)) {
+                if (node.bounds.top < taggedTop) {
+                    taggedTop = node.bounds.top
+                    tagged = label
+                }
+            } else if (node.bounds.top >= lower && looksLikeName(label) && node.bounds.top < fallbackTop) {
+                fallbackTop = node.bounds.top
+                fallback = label
+            }
+        }
+        val strong = tagged != null
+        val chosen = tagged ?: fallback ?: return null to false
+        return "r" + chosen.hashCode().toUInt().toString(16) to strong
+    }
 }
 
 internal fun treeAny(
@@ -249,6 +286,27 @@ private val labelChrome =
         "ফলো",
         "বিরাম",
     )
+
+private val authorId =
+    Regex("(?i)(clips_author_username|clips_author|author_username|actor_name|profile_name|video_owner|reel_author|fb_author)")
+
+private val genericReelLabel =
+    Regex(
+        "(?i)^(reels?|shorts?|রিলস?|রিল|শর্টস|tap to show video controls|show video controls|video controls|" +
+            "original audio|audio|sponsored|স্পনসর্ড)$",
+    )
+
+private fun looksLikeName(label: String): Boolean {
+    if (label.length !in 2..32) return false
+    if (label.count { it == ' ' } > 3) return false
+    return true
+}
+
+private fun reelLabel(node: NodeSnapshot): String? {
+    val label = stableLabel(node) ?: return null
+    if (genericReelLabel.matches(label)) return null
+    return label
+}
 
 private fun stableLabel(node: NodeSnapshot): String? {
     val raw = node.contentDescription?.trim().orEmpty()

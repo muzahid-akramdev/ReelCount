@@ -49,6 +49,12 @@ class ReelCounterService : AccessibilityService() {
     private var lastScrollAt = 0L
     private var scrollIdentity: String? = null
     private var seenIndex: Int? = null
+    private var lastReelKey: String? = null
+    private var lastPositive = 0L
+    private var heldIdentity: String? = null
+    private var heldIndex: Int? = null
+    private var heldKey: String? = null
+    private var heldStrong = false
     private var shownCount = 0
     private val zone: ZoneId get() = ZoneId.systemDefault()
 
@@ -108,8 +114,34 @@ class ReelCounterService : AccessibilityService() {
             val snap = NodeSnapshots.capture(root, treeDepth(pkg), treeBudget(pkg)) ?: return
             val windowClass = event.className?.toString()
             val tree = withWindowClass(snap, type, windowClass)
-            val eval = engine.evaluate(rule, tree)
-            if (!eval.viewerActive || viewerPackage != pkg) scrollGate.reset()
+            val raw = engine.evaluate(rule, tree)
+            // A swipe recycles the pager for a frame. Ending the session there
+            // swallowed the next reels into one "open" count.
+            val hold =
+                !raw.viewerActive &&
+                    viewerPackage == pkg &&
+                    lastPositive != 0L &&
+                    now - lastPositive < 1_000
+            val eval =
+                if (hold) {
+                    raw.copy(
+                        viewerActive = true,
+                        identity = heldIdentity,
+                        index = heldIndex,
+                        reelKey = heldKey,
+                        strongReelKey = heldStrong,
+                    )
+                } else {
+                    raw
+                }
+            if (raw.viewerActive) {
+                lastPositive = now
+                heldIdentity = raw.identity
+                heldIndex = raw.index
+                heldKey = raw.reelKey
+                heldStrong = raw.strongReelKey
+            }
+            if (!eval.viewerActive) scrollGate.reset()
             val deltaY = if (android.os.Build.VERSION.SDK_INT >= 28) event.scrollDeltaY else 0
             val large =
                 scrollGate.onScroll(
@@ -137,13 +169,34 @@ class ReelCounterService : AccessibilityService() {
             var identity = eval.identity
             var index = eval.index
             val indexStuck = index != null && index == seenIndex
-            if (eval.viewerActive) seenIndex = index
-            var liteLabelAdvance = false
-            if (eval.viewerActive && large && now - viewerSince > 800 && (index == null || indexStuck)) {
-                if (scrollIdentity == null || now - lastScrollAt > 700) {
-                    scrollSerial += 1
-                    scrollIdentity = "s$scrollSerial"
-                }
+            if (eval.viewerActive) {
+                seenIndex = index
+            } else {
+                seenIndex = null
+            }
+            var advanced = large
+            val key = if (eval.viewerActive) eval.reelKey else null
+            val keyChanged = key != null && lastReelKey != null && key != lastReelKey
+            if (!eval.viewerActive) {
+                lastReelKey = null
+            } else if (key != null) {
+                // Keep the previous name when a frame omits it, so the next reel still differs.
+                lastReelKey = key
+            }
+            if (eval.viewerActive && keyChanged) {
+                // Author (or the name on the video) changed. That is a new reel even
+                // when the pager never emits a page-sized scroll event.
+                identity = key
+                index = null
+                advanced = true
+                scrollIdentity = key
+                scrollSerial += 1
+            } else if (eval.viewerActive && eval.strongReelKey && key != null) {
+                identity = key
+                index = null
+            } else if (eval.viewerActive && large && now - viewerSince > 400 && (index == null || indexStuck)) {
+                scrollSerial += 1
+                scrollIdentity = "s$scrollSerial"
                 lastScrollAt = now
                 identity = scrollIdentity
                 index = scrollSerial
@@ -151,7 +204,7 @@ class ReelCounterService : AccessibilityService() {
                 identity = scrollIdentity
                 index = scrollSerial
             } else if (pkg == LITE && eval.viewerActive && index == null && identity != null) {
-                liteLabelAdvance = true
+                advanced = true
             }
             if (now - lastInspect > 400) {
                 lastInspect = now
@@ -173,7 +226,7 @@ class ReelCounterService : AccessibilityService() {
                         viewerActive = eval.viewerActive,
                         identity = identity,
                         index = index,
-                        scrolled = large || liteLabelAdvance,
+                        scrolled = advanced,
                     ),
                 )
             handle(pkg, decision, eval.viewerActive)
@@ -233,6 +286,12 @@ class ReelCounterService : AccessibilityService() {
         scrollSerial = 0
         scrollIdentity = null
         seenIndex = null
+        lastReelKey = null
+        lastPositive = 0L
+        heldIdentity = null
+        heldIndex = null
+        heldKey = null
+        heldStrong = false
         scrollGate.reset()
         handler.removeCallbacks(leaveRunnable)
         if (::overlay.isInitialized) overlay.renderCounter(false, shownCount, settings)
@@ -308,7 +367,7 @@ class ReelCounterService : AccessibilityService() {
         info.flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
             AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
             AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-        info.notificationTimeout = 100
+        info.notificationTimeout = 40
         serviceInfo = info
     }
 
@@ -370,9 +429,9 @@ class ReelCounterService : AccessibilityService() {
         return match
     }
 
-    private fun treeDepth(pkg: String): Int = if (pkg == LITE) 28 else rules.global.maxTreeDepth
+    private fun treeDepth(pkg: String): Int = if (pkg == LITE) 30 else 26
 
-    private fun treeBudget(pkg: String): Int = if (pkg == LITE) 480 else 280
+    private fun treeBudget(pkg: String): Int = if (pkg == LITE) 720 else 640
 
     private fun eventTypeName(type: Int): String =
         when (type) {

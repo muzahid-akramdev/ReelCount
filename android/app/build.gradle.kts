@@ -15,8 +15,8 @@ android {
         applicationId = "dev.akram.reelcount"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.2.2"
+        versionCode = 6
+        versionName = "0.2.3"
 
         val local = Properties()
         val file = rootProject.file("local.properties")

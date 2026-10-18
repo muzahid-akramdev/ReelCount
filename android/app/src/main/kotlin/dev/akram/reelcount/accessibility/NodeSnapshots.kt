@@ -51,15 +51,26 @@ object NodeSnapshots {
         val children = ArrayList<NodeSnapshot>()
         if (depth > 0) {
             val count = node.childCount
+            val ordered = ArrayList<AccessibilityNodeInfo>(count)
             for (index in 0 until count) {
-                if (budget[0] <= 0) break
                 val child = node.getChild(index) ?: continue
-                try {
+                ordered.add(child)
+            }
+            // The fullscreen viewer is the large child. Walk it before chrome so a
+            // node budget cannot drop the reel that is actually on screen.
+            ordered.sortByDescending { child ->
+                val area = Rect()
+                child.getBoundsInScreen(area)
+                area.width().toLong() * area.height().toLong()
+            }
+            try {
+                for (child in ordered) {
+                    if (budget[0] <= 0) break
                     val snap = captureNode(child, depth - 1, budget)
                     if (snap != null) children.add(snap)
-                } finally {
-                    child.recycle()
                 }
+            } finally {
+                ordered.forEach { it.recycle() }
             }
         }
         val spoken =
