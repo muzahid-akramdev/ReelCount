@@ -100,7 +100,7 @@ class RuleEngine {
         var bestArea = -1
         walk(scope) { node ->
             if (!matches(matcher, node)) return@walk
-            if (rootHeight > 0 && node.bounds.height < rootHeight * 0.5) return@walk
+            if (rootHeight > 0 && node.bounds.height < rootHeight * 0.4) return@walk
             val index = deepestIndex(node) ?: return@walk
             val area = node.bounds.width * node.bounds.height
             if (area >= bestArea) {

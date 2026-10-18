@@ -19,16 +19,30 @@
           {
             "source": "viewId",
             "op": "regex",
-            "value": "(?i)clips_viewer|clips_media_component|clips_video",
+            "value": "(?i)clips_viewer|clips_media|clips_video|clips_item",
             "score": 4,
-            "minHeightRatio": 0.55
+            "minHeightRatio": 0.45
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)(\\breels?\\b|রিলস?)",
+            "score": 3,
+            "selected": true
           },
           {
             "source": "contentDescription",
             "op": "regex",
             "value": "(?i)(\\breels?\\b|রিলস?)",
             "score": 4,
-            "minHeightRatio": 0.75
+            "minHeightRatio": 0.7
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)(ViewPager|RecyclerView)",
+            "score": 2,
+            "minHeightRatio": 0.62
           },
           {
             "source": "className",
@@ -116,21 +130,35 @@
       "packageName": "com.facebook.katana",
       "enabled": true,
       "viewer": {
-        "minScore": 3,
+        "minScore": 4,
         "signals": [
           {
             "source": "viewId",
             "op": "regex",
             "value": "(?i)reel|fb_shorts|shorts_viewer",
-            "score": 3,
-            "minHeightRatio": 0.72
+            "score": 4,
+            "minHeightRatio": 0.55
           },
           {
             "source": "contentDescription",
             "op": "regex",
             "value": "(?i)(\\breels?\\b|রিলস?)",
             "score": 3,
-            "minHeightRatio": 0.75
+            "selected": true
+          },
+          {
+            "source": "contentDescription",
+            "op": "regex",
+            "value": "(?i)(\\breels?\\b|রিলস?)",
+            "score": 4,
+            "minHeightRatio": 0.7
+          },
+          {
+            "source": "className",
+            "op": "regex",
+            "value": "(?i)(ViewPager|RecyclerView)",
+            "score": 2,
+            "minHeightRatio": 0.62
           },
           {
             "source": "className",

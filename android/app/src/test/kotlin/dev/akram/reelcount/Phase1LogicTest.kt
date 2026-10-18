@@ -9,7 +9,7 @@ import dev.akram.reelcount.domain.DayBoundary
 import dev.akram.reelcount.domain.NodeSnapshot
 import dev.akram.reelcount.domain.PolicyConfig
 import dev.akram.reelcount.domain.RuleEngine
-import dev.akram.reelcount.domain.RulesParser
+import dev.akram.reelcount.domain.ScrollGate
 import dev.akram.reelcount.domain.SwipeDirection
 import dev.akram.reelcount.domain.WatchSample
 import dev.akram.reelcount.domain.crossedMilestone
@@ -142,6 +142,19 @@ class Phase1LogicTest {
         assertTrue(engine.evaluate(lite, liteSurface()).viewerActive)
         assertFalse(engine.evaluate(lite, liteHomeFeed()).viewerActive)
         assertFalse(engine.evaluate(lite, liteStory()).viewerActive)
+        assertTrue(engine.evaluate(instagram, instagramReelsTab()).viewerActive)
+        assertTrue(engine.evaluate(facebook, facebookReelsTab()).viewerActive)
+        assertFalse(engine.evaluate(facebook, facebookHome()).viewerActive)
+    }
+
+    @Test
+    fun smallScrollsInOneGestureCountOnce() {
+        val gate = ScrollGate()
+        assertFalse(gate.onScroll(true, 0, 0, 4000, -1, -1, 200, 2000, 0))
+        assertFalse(gate.onScroll(true, 0, 200, 4000, -1, -1, 200, 2000, 40))
+        assertFalse(gate.onScroll(true, 0, 400, 4000, -1, -1, 200, 2000, 80))
+        assertTrue(gate.onScroll(true, 0, 800, 4000, -1, -1, 400, 2000, 120))
+        assertFalse(gate.onScroll(true, 0, 820, 4000, -1, -1, 20, 2000, 2_000))
     }
 
     @Test
@@ -236,6 +249,25 @@ class Phase1LogicTest {
                 listOf(page),
             )
         return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager))
+    }
+
+    private fun instagramReelsTab(): NodeSnapshot {
+        val tab = node(null, "android.widget.ImageView", "Reels", 800, 1800, 1000, 1920, null, selected = true)
+        val pager = node(null, "androidx.viewpager.widget.ViewPager", null, 0, 0, 1080, 1700, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager, tab))
+    }
+
+    private fun facebookReelsTab(): NodeSnapshot {
+        val tab = node(null, "android.view.View", "Reels", 700, 1800, 900, 1920, null, selected = true)
+        val pager = node(null, "androidx.recyclerview.widget.RecyclerView", null, 0, 0, 1080, 1750, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager, tab))
+    }
+
+    private fun facebookHome(): NodeSnapshot {
+        val tab = node(null, "android.view.View", "Home", 0, 1800, 200, 1920, null, selected = true)
+        val pager = node(null, "androidx.recyclerview.widget.RecyclerView", null, 0, 0, 1080, 1750, null)
+        val card = node("com.facebook.katana:id/fb_reel_card", "android.widget.FrameLayout", "Reels", 0, 400, 1080, 900, null)
+        return node(null, "android.widget.FrameLayout", null, 0, 0, 1080, 1920, null, listOf(pager, card, tab))
     }
 
     private fun facebookCard(): NodeSnapshot {
